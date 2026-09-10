@@ -18,28 +18,14 @@ jobs:
           fetch-depth: 0
       - name: Append theme mockup rules
         shell: bash
+        env:
+          THEME_RULES_B64: CgpcI1wjIDI0XC4g7YWM66eIIOyLnOyViCDtlbTshJ0g6rec7LmZ6rO8IOq4iOyngCDsmIjsi5wKCmBkZXNpZ25fbW9ja3Vwcy9g7J2YIOydtOuvuOyngOuKlCAqKu2FjOuniOydmCDsg4nqsJAsIOyniOqwkCwg67aE7JyE6riwLCDrrLjtmZQv7KeA7JetIOuqqO2LsO2UhOulvCDtjJDri6jtlZjquLAg7JyE7ZWcIOustOuTnCDsi5zslYgqKuydtOuLpC4g7Iuk7KCcIOygnO2SiOydmCDtgqQg67Cw7Je0LCDtgqQg6rCc7IiYLCDtgqTrs7Trk5wg64aS7J20LCDtm4Trs7TrsJQg6rWs7KGwLCDstZzsooUg7ZmU66m0IOuwsOy5mCDrmJDripQg66eI7LyA7YyFIOy6oeyymOulvCDtmZXsoJXtlZjripQgVUkg66qp7JeF7Jy866GcIO2VtOyEne2VmOyngCDslYrripTri6QuCgpcLSDsi5zslYjsl5AgUVdFUlRZ6rCAIOq3uOugpOyguCDsnojslrTrj4Qg7ZW064u5IO2FjOuniOqwgCBRV0VSVFkg7KCE7Jqp7J20652864qUIOucu+ydtCDslYTri4jri6QuIOqwmeydgCDthYzrp4gg7J6Q7IKwL+yKpO2DgOydvOydgCBGbGljaywgMTDtgqQsIFFXRVJUWSDrk7Eg66qo65OgIOyngOybkCDroIjsnbTslYTsm4Psl5Ag64+F66a97KCB7Jy866GcIOyggeyaqSDqsIDriqXtlbTslbwg7ZWc64ukLiAgClwtIOy1nOyihSDrp4jsvIDtjIUg7J2066+47KeA64qUIOyLpOygnCDslbEg6rWs7ZiEIO2bhCDsi6TquLDquLAv7JmE7ISxIFVJ66W8IOy6oeyymO2VmOyXrCDsoJzsnpHtlZzri6QuIGBkZXNpZ25fbW9ja3Vwcy9gIOydtOuvuOyngOulvCDsiqTthqDslrQg7Iqk7YGs66aw7IO37Jy866GcIOq3uOuMgOuhnCDsgqzsmqntlZjripQg6rKD7J2EIOyghOygnOuhnCDqtaztmITtlZjsp4Ag7JWK64qU64ukLiAgClwtIO2FjOuniCDrlYzrrLjsl5Ag7Iuk7KCcIOyeheugpSDsmIHsl63snYQg7KSE7J206rGw64KYIO2CpOuztOuTnCDrhpLsnbTrpbwg64qY66as7KeAIOyViuuKlOuLpC4g7J6l7IudIOydtOuvuOyngOulvCDrs7Tsl6zso7zquLAg7JyE7ZWcIOuzhOuPhCDrsLDrhIgv7Z6I7Ja066GcIOyYgeyXreydhCDrp4zrk6Tsp4Ag7JWK64qU64ukLiAgClwtIOyngOyXrS/rrLjtmZQg7J2066+47KeA64qUIO2CpOuztOuTnCDsoITssrQg67Cw6rK9LCDtgqQg7IKs7J20IOyXrOuwsSwg7ZuE67O067CUL+yKpO2OmOydtOyKpOuwlCDso7zrs4AsIOuCruydgCDrjIDruYQg7JuM7YSw66eI7YGsIOuTsSAqKuyeheugpSBVSeyZgCDqsJnsnYAg66m0IOyViOyXkCDsnpDsl7DsiqTrn73qsowg7Ya17ZWpKirtlZzri6QuICAKXC0g67Cw6rK9IOydtOuvuOyngOuKlCDtgqQg6riA7J6Q7JmAIO2EsOy5mCDsmIHsl63snYQg67Cp7ZW07ZWY7KeAIOyViuuPhOuhnSDrjIDruYTsmYAg67aI7Yis66qF64+E66W8IOyhsOygiO2VnOuLpC4KCioq66qF7Iuc7KCBIOq4iOyngCDsmIjsi5wg4oCUIGBkZXNpZ25fbW9ja3Vwcy8wM19CdXNhbl9PY2Vhbi5qcGdgKiogIArsnbQg7Iuc7JWI7J2AIOq0keyViOuMgOq1kC/rsJTri6Qg7J2066+47KeAIOyekOyytOydmCDsg4nqsJDqs7wg67aE7JyE6riw64qUIOywuOqzoO2VoCDsiJgg7J6I7KeA66eMLCDsnbTrr7jsp4DqsIAg7YKk67O065OcIOyDgeuLqOydmCDrs4Trj4Qg7J6l7IudIOyYgeyXreycvOuhnCDrtoTrpqzrkJjslrQg7J6I7Ja0IOygnO2SiCDqtazsobDsnZgg67O467O06riw66GcIOyCrOyaqe2VmOuptCDslYgg65Cc64ukLiDrtoDsgrAg7YWM66eI66W8IOyLpOygnCDqtaztmITtlaAg65WM64qUIOq0keyViOuMgOq1kMK367CU64ukIOuqqO2LsO2UhOulvCDtgqTrs7Trk5wg67Cw6rK9IOyViOyXkCDrgq7snYAg64yA67mE66GcIOuFueydtOqzoCwg7J6l7IudIOyghOyaqSDsg4Hri6gg7J2066+47KeAIO2MqOuEkOydhCDstpTqsIDtlZjsp4Ag7JWK64qU64ukLgoKQ29kZXjripQg7YWM66eIIOq1rO2YhCDsi5wg7Iuc7JWI7J2YICoq67aE7JyE6riw64qUIOywuOqzoO2VmOuQmCDqtazsobDrpbwg67O17KCc7ZWY7KeAIOyViuuKlOuLpC4qKiDtirntnogg7YWM66eIIOydtOuvuOyngOulvCDtgazqsowg67O07Jes7KO86riwIOychO2VtCDtg4DsnbTtlZEg6rO16rCE7J2EIO2drOyDne2VmOuKlCDqtaztmITsnYAg7JqU6rWs7IKs7ZWtIOychOuwmOycvOuhnCDrs7jri6QuCg==
         run: |
-          if grep -q '## 24\. 테마 시안 해석 규칙과 금지 예시' AGENTS.md; then
+          if grep -q '테마 시안 해석 규칙과 금지 예시' AGENTS.md; then
             echo 'Theme rules already present.'
             exit 0
           fi
-          cat >> AGENTS.md <<'EOF'
-
-## 24. 테마 시안 해석 규칙과 금지 예시
-
-`design_mockups/`의 이미지는 **테마의 색감, 질감, 분위기, 문화/지역 모티프를 판단하기 위한 무드 시안**이다. 실제 제품의 키 배열, 키 개수, 키보드 높이, 후보바 구조, 최종 화면 배치 또는 마케팅 캡처를 확정하는 UI 목업으로 해석하지 않는다.
-
-- 시안에 QWERTY가 그려져 있어도 해당 테마가 QWERTY 전용이라는 뜻이 아니다. 같은 테마 자산/스타일은 Flick, 10키, QWERTY 등 모든 지원 레이아웃에 독립적으로 적용 가능해야 한다.
-- 최종 마케팅 이미지는 실제 앱 구현 후 실기기/완성 UI를 캡처하여 제작한다. `design_mockups/` 이미지를 스토어 스크린샷으로 그대로 사용하는 것을 전제로 구현하지 않는다.
-- 테마 때문에 실제 입력 영역을 줄이거나 키보드 높이를 늘리지 않는다. 장식 이미지를 보여주기 위한 별도 배너/히어로 영역을 만들지 않는다.
-- 지역/문화 이미지는 키보드 전체 배경, 키 사이 여백, 후보바/스페이스바 주변, 낮은 대비 워터마크 등 **입력 UI와 같은 면 안에 자연스럽게 통합**한다.
-- 배경 이미지는 키 글자와 터치 영역을 방해하지 않도록 대비와 불투명도를 조절한다.
-
-**명시적 금지 예시 — `design_mockups/03_Busan_Ocean.jpg`**
-이 시안은 광안대교/바다 이미지 자체의 색감과 분위기는 참고할 수 있지만, 이미지가 키보드 상단의 별도 장식 영역으로 분리되어 있어 제품 구조의 본보기로 사용하면 안 된다. 부산 테마를 실제 구현할 때는 광안대교·바다 모티프를 키보드 배경 안에 낮은 대비로 녹이고, 장식 전용 상단 이미지 패널을 추가하지 않는다.
-
-Codex는 테마 구현 시 시안의 **분위기는 참고하되 구조를 복제하지 않는다.** 특히 테마 이미지를 크게 보여주기 위해 타이핑 공간을 희생하는 구현은 요구사항 위반으로 본다.
-EOF
+          printf '%s' "$THEME_RULES_B64" | base64 -d >> AGENTS.md
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add AGENTS.md
