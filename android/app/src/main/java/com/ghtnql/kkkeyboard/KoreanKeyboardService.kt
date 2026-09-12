@@ -10,70 +10,146 @@ import android.widget.LinearLayout
 
 class KoreanKeyboardService : InputMethodService() {
     private val composer = HangulComposer()
+    private val shiftedCharacterButtons = mutableListOf<Pair<Button, String>>()
+    private var shiftEnabled = false
+    private var shiftButton: Button? = null
 
     override fun onCreateInputView(): View {
-        val root = LinearLayout(this).apply {
+        shiftedCharacterButtons.clear()
+        shiftEnabled = false
+
+        return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
-        }
 
-        KEY_ROWS.forEach { row ->
-            root.addView(createRow(row))
-        }
+            CHARACTER_ROWS.forEach { row ->
+                addView(createCharacterRow(row))
+            }
 
-        root.addView(createRow(listOf("NEXT", "Space", "Enter", "⌫"), actionRow = true))
-        return root
+            addView(createBottomCharacterRow())
+            addView(createActionRow())
+        }
     }
 
     override fun onFinishInput() {
         composer.reset()
+        shiftEnabled = false
         super.onFinishInput()
     }
 
-    private fun createRow(labels: List<String>, actionRow: Boolean = false): View {
+    private fun createCharacterRow(labels: List<String>): View {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
 
-            labels.forEach { label ->
-                addView(Button(this@KoreanKeyboardService).apply {
-                    text = label
-                    textSize = if (actionRow) 14f else 18f
-                    isAllCaps = false
-                    minWidth = 0
-                    minimumWidth = 0
-                    setPadding(dp(1), 0, dp(1), 0)
-                    layoutParams = LinearLayout.LayoutParams(0, dp(50), 1f).apply {
-                        setMargins(dp(1), dp(2), dp(1), dp(2))
-                    }
-                    setOnClickListener { handleKey(label) }
-                })
+            labels.forEach { baseLabel ->
+                addView(createCharacterButton(baseLabel))
             }
         }
     }
 
-    private fun handleKey(label: String) {
-        val connection = currentInputConnection ?: return
+    private fun createBottomCharacterRow(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
 
-        when (label) {
-            "⌫" -> handleBackspace(connection)
-            "Space" -> {
-                commitPending(connection)
-                connection.commitText(" ", 1)
-            }
-            "Enter" -> {
-                commitPending(connection)
-                sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
-            }
-            "NEXT" -> {
-                commitPending(connection)
-                switchToNextInputMethod(false)
-            }
-            else -> {
-                val ch = label.singleOrNull() ?: return
-                applyEdit(connection, composer.input(ch))
+            addView(createActionButton("Shift", weight = 1.35f) { toggleShift() }.also {
+                shiftButton = it
+            })
+
+            BOTTOM_ROW.forEach { baseLabel ->
+                addView(createCharacterButton(baseLabel))
             }
         }
+    }
+
+    private fun createActionRow(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+
+            addView(createActionButton("NEXT", weight = 1f) {
+                currentInputConnection?.let { connection ->
+                    commitPending(connection)
+                    switchToNextInputMethod(false)
+                }
+            })
+            addView(createActionButton("Space", weight = 2.2f) {
+                currentInputConnection?.let { connection ->
+                    commitPending(connection)
+                    connection.commitText(" ", 1)
+                }
+            })
+            addView(createActionButton("Enter", weight = 1.2f) {
+                currentInputConnection?.let { connection ->
+                    commitPending(connection)
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+                }
+            })
+            addView(createActionButton("⌫", weight = 1f) {
+                currentInputConnection?.let(::handleBackspace)
+            })
+        }
+    }
+
+    private fun createCharacterButton(baseLabel: String): Button {
+        return Button(this).apply {
+            text = baseLabel
+            textSize = 18f
+            isAllCaps = false
+            minWidth = 0
+            minimumWidth = 0
+            setPadding(dp(1), 0, dp(1), 0)
+            layoutParams = keyLayoutParams()
+            setOnClickListener { handleCharacter(baseLabel) }
+        }.also { button ->
+            if (SHIFTED_KEYS.containsKey(baseLabel)) {
+                shiftedCharacterButtons += button to baseLabel
+            }
+        }
+    }
+
+    private fun createActionButton(
+        label: String,
+        weight: Float,
+        onClick: () -> Unit,
+    ): Button {
+        return Button(this).apply {
+            text = label
+            textSize = 14f
+            isAllCaps = false
+            minWidth = 0
+            minimumWidth = 0
+            setPadding(dp(1), 0, dp(1), 0)
+            layoutParams = keyLayoutParams(weight)
+            setOnClickListener { onClick() }
+        }
+    }
+
+    private fun handleCharacter(baseLabel: String) {
+        val connection = currentInputConnection ?: return
+        val actualLabel = if (shiftEnabled) SHIFTED_KEYS[baseLabel] ?: baseLabel else baseLabel
+        val ch = actualLabel.singleOrNull() ?: return
+
+        applyEdit(connection, composer.input(ch))
+
+        if (shiftEnabled) {
+            setShift(false)
+        }
+    }
+
+    private fun toggleShift() {
+        setShift(!shiftEnabled)
+    }
+
+    private fun setShift(enabled: Boolean) {
+        if (shiftEnabled == enabled) return
+        shiftEnabled = enabled
+
+        shiftedCharacterButtons.forEach { (button, baseLabel) ->
+            button.text = if (enabled) SHIFTED_KEYS.getValue(baseLabel) else baseLabel
+        }
+        shiftButton?.isActivated = enabled
     }
 
     private fun handleBackspace(connection: InputConnection) {
@@ -110,14 +186,29 @@ class KoreanKeyboardService : InputMethodService() {
         }
     }
 
+    private fun keyLayoutParams(weight: Float = 1f) =
+        LinearLayout.LayoutParams(0, dp(50), weight).apply {
+            setMargins(dp(1), dp(2), dp(1), dp(2))
+        }
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
-        private val KEY_ROWS = listOf(
-            listOf("ㅂ", "ㅃ", "ㅈ", "ㅉ", "ㄷ", "ㄸ", "ㄱ", "ㄲ", "ㅅ", "ㅆ"),
-            listOf("ㅛ", "ㅕ", "ㅑ", "ㅒ", "ㅐ", "ㅔ", "ㅖ", "ㅗ"),
-            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅓ", "ㅏ", "ㅣ"),
-            listOf("ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"),
+        private val CHARACTER_ROWS = listOf(
+            listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
+            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
+        )
+
+        private val BOTTOM_ROW = listOf("ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ")
+
+        private val SHIFTED_KEYS = mapOf(
+            "ㅂ" to "ㅃ",
+            "ㅈ" to "ㅉ",
+            "ㄷ" to "ㄸ",
+            "ㄱ" to "ㄲ",
+            "ㅅ" to "ㅆ",
+            "ㅐ" to "ㅒ",
+            "ㅔ" to "ㅖ",
         )
     }
 }
