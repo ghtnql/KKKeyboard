@@ -18,7 +18,7 @@ class KoreanKeyboardService : InputMethodService() {
         }
 
         KEY_ROWS.forEach { row ->
-            root.addView(createRow(row.map { it.toString() }))
+            root.addView(createRow(row))
         }
 
         root.addView(createRow(listOf("NEXT", "Space", "Enter", "⌫"), actionRow = true))
@@ -38,13 +38,13 @@ class KoreanKeyboardService : InputMethodService() {
             labels.forEach { label ->
                 addView(Button(this@KoreanKeyboardService).apply {
                     text = label
-                    textSize = if (actionRow) 14f else 20f
+                    textSize = if (actionRow) 14f else 18f
                     isAllCaps = false
                     minWidth = 0
                     minimumWidth = 0
-                    setPadding(dp(2), 0, dp(2), 0)
-                    layoutParams = LinearLayout.LayoutParams(0, dp(52), 1f).apply {
-                        setMargins(dp(2), dp(2), dp(2), dp(2))
+                    setPadding(dp(1), 0, dp(1), 0)
+                    layoutParams = LinearLayout.LayoutParams(0, dp(50), 1f).apply {
+                        setMargins(dp(1), dp(2), dp(1), dp(2))
                     }
                     setOnClickListener { handleKey(label) }
                 })
@@ -114,11 +114,10 @@ class KoreanKeyboardService : InputMethodService() {
 
     companion object {
         private val KEY_ROWS = listOf(
-            charArrayOf('ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ'),
-            charArrayOf('ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'),
-            charArrayOf('ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ'),
-            charArrayOf('ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ'),
-            charArrayOf('ㅜ', 'ㅡ', 'ㅣ', 'ㅏ', 'ㅓ'),
+            listOf("ㅂ", "ㅃ", "ㅈ", "ㅉ", "ㄷ", "ㄸ", "ㄱ", "ㄲ", "ㅅ", "ㅆ"),
+            listOf("ㅛ", "ㅕ", "ㅑ", "ㅒ", "ㅐ", "ㅔ", "ㅖ", "ㅗ"),
+            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅓ", "ㅏ", "ㅣ"),
+            listOf("ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"),
         )
     }
 }
