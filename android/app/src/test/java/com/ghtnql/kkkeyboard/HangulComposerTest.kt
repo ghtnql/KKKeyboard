@@ -34,6 +34,46 @@ class HangulComposerTest {
     }
 
     @Test
+    fun composesCompoundVowel() {
+        val c = HangulComposer()
+        c.input('ㄱ')
+        c.input('ㅗ')
+        c.input('ㅏ')
+        assertEquals("과", c.currentText())
+    }
+
+    @Test
+    fun composesCompoundFinalAndSplitsItBeforeVowel() {
+        val c = HangulComposer()
+        c.input('ㄱ')
+        c.input('ㅏ')
+        c.input('ㅂ')
+        c.input('ㅅ')
+        assertEquals("값", c.currentText())
+
+        val edit = c.input('ㅏ')
+        assertEquals("갑", edit.commit)
+        assertEquals("사", edit.composing)
+    }
+
+    @Test
+    fun standaloneVowelRemainsJamo() {
+        val c = HangulComposer()
+        c.input('ㅏ')
+        assertEquals("ㅏ", c.currentText())
+    }
+
+    @Test
+    fun backspaceWalksCompoundVowelBack() {
+        val c = HangulComposer()
+        c.input('ㄱ')
+        c.input('ㅗ')
+        c.input('ㅏ')
+        assertEquals("고", c.backspace().composing)
+        assertEquals("ㄱ", c.backspace().composing)
+    }
+
+    @Test
     fun backspaceWalksCompositionBack() {
         val c = HangulComposer()
         c.input('ㄱ')
@@ -44,12 +84,5 @@ class HangulComposerTest {
         val last = c.backspace()
         assertEquals(null, last.composing)
         assertFalse(c.backspace().consumed)
-    }
-
-    @Test
-    fun standaloneVowelUsesSilentIeung() {
-        val c = HangulComposer()
-        c.input('ㅏ')
-        assertEquals("아", c.currentText())
     }
 }
