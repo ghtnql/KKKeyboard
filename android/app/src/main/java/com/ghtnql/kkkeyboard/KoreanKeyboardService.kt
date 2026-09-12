@@ -40,6 +40,18 @@ class KoreanKeyboardService : InputMethodService() {
         }
     }
 
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        stopDeleteRepeat()
+
+        // A genuinely new editor session must never inherit an unfinished Hangul
+        // composition or one-shot Shift state from the previous app/field.
+        if (!restarting) {
+            composer.reset()
+            shiftEnabled = false
+        }
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         stopDeleteRepeat()
@@ -56,6 +68,21 @@ class KoreanKeyboardService : InputMethodService() {
         keyboardRoot?.let { root ->
             if (!restarting || modeChanged) renderKeyboard(root, nextMode)
         }
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        // ACTION_UP/CANCEL is not guaranteed if the IME window disappears while
+        // Backspace is held. Always cancel the repeat callback when the view hides.
+        stopDeleteRepeat()
+        super.onFinishInputView(finishingInput)
+    }
+
+    override fun onWindowHidden() {
+        // Defensive cleanup for app switches, IME reselection and system-driven
+        // window dismissal. This keeps the main-loop delete runnable from surviving
+        // after the keyboard is no longer visible.
+        stopDeleteRepeat()
+        super.onWindowHidden()
     }
 
     override fun onFinishInput() {
