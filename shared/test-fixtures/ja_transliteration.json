@@ -1,0 +1,20 @@
+[
+  {
+    "inputHangul": "아리가토",
+    "expectedCandidates": ["ありがとう"],
+    "category": "basic",
+    "notes": "Common greeting/thanks seed fixture"
+  },
+  {
+    "inputHangul": "곤니치와",
+    "expectedCandidates": ["こんにちは"],
+    "category": "orthographic-exception",
+    "notes": "Final wa sound is written は in the greeting"
+  },
+  {
+    "inputHangul": "스시",
+    "expectedCandidates": ["すし", "寿司"],
+    "category": "multiple-candidates",
+    "notes": "Kana plus common kanji candidate"
+  }
+]
