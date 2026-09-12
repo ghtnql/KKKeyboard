@@ -81,10 +81,7 @@ class KoreanKeyboardService : InputMethodService() {
                 }
             })
             addView(createActionButton("Enter", weight = 1.2f) {
-                currentInputConnection?.let { connection ->
-                    commitPending(connection)
-                    sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
-                }
+                currentInputConnection?.let(::handleEnter)
             })
             addView(createActionButton("⌫", weight = 1f) {
                 currentInputConnection?.let(::handleBackspace)
@@ -150,6 +147,17 @@ class KoreanKeyboardService : InputMethodService() {
             button.text = TwoBeolsikLayout.labelFor(baseLabel, enabled)
         }
         shiftButton?.isActivated = enabled
+    }
+
+    private fun handleEnter(connection: InputConnection) {
+        commitPending(connection)
+
+        val actionId = EnterActionResolver.actionId(currentInputEditorInfo?.imeOptions ?: 0)
+        if (actionId != null) {
+            connection.performEditorAction(actionId)
+        } else {
+            sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+        }
     }
 
     private fun handleBackspace(connection: InputConnection) {
