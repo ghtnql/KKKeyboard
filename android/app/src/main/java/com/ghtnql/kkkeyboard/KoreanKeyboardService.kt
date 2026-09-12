@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.Button
 import android.widget.LinearLayout
@@ -18,6 +19,8 @@ class KoreanKeyboardService : InputMethodService() {
     private var shiftEnabled = false
     private var shiftButton: Button? = null
     private var deleting = false
+    private var keyboardRoot: LinearLayout? = null
+    private var activeFieldMode = InputFieldMode.TEXT
 
     private val deleteRepeat = object : Runnable {
         override fun run() {
@@ -28,14 +31,30 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
-        shiftedCharacterButtons.clear()
-        shiftEnabled = false
+        activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
-            TwoBeolsikLayout.characterRows.forEach { addView(createCharacterRow(it)) }
-            addView(createBottomCharacterRow())
-            addView(createActionRow())
+            keyboardRoot = this
+            renderKeyboard(this, activeFieldMode)
+        }
+    }
+
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        stopDeleteRepeat()
+
+        val nextMode = InputFieldModeResolver.fromInputType(info?.inputType ?: 0)
+        val modeChanged = nextMode != activeFieldMode
+        activeFieldMode = nextMode
+
+        if (!restarting) {
+            composer.reset()
+            shiftEnabled = false
+        }
+
+        keyboardRoot?.let { root ->
+            if (!restarting || modeChanged) renderKeyboard(root, nextMode)
         }
     }
 
@@ -48,7 +67,55 @@ class KoreanKeyboardService : InputMethodService() {
 
     override fun onDestroy() {
         stopDeleteRepeat()
+        keyboardRoot = null
         super.onDestroy()
+    }
+
+    private fun renderKeyboard(root: LinearLayout, mode: InputFieldMode) {
+        shiftedCharacterButtons.clear()
+        shiftButton = null
+        shiftEnabled = false
+        root.removeAllViews()
+
+        when (mode) {
+            InputFieldMode.NUMBER -> renderNumberKeyboard(root)
+            InputFieldMode.PHONE -> renderPhoneKeyboard(root)
+            InputFieldMode.EMAIL, InputFieldMode.URI, InputFieldMode.TEXT -> renderTextKeyboard(root, mode)
+        }
+    }
+
+    private fun renderTextKeyboard(root: LinearLayout, mode: InputFieldMode) {
+        TwoBeolsikLayout.characterRows.forEach { root.addView(createCharacterRow(it)) }
+        root.addView(createBottomCharacterRow())
+
+        when (mode) {
+            InputFieldMode.EMAIL -> root.addView(createLiteralRow(listOf("@", ".", "-", "_")))
+            InputFieldMode.URI -> root.addView(createLiteralRow(listOf("/", ".", ":", "-", "_")))
+            else -> Unit
+        }
+
+        root.addView(createActionRow())
+    }
+
+    private fun renderNumberKeyboard(root: LinearLayout) {
+        listOf(
+            listOf("1", "2", "3"),
+            listOf("4", "5", "6"),
+            listOf("7", "8", "9"),
+        ).forEach { root.addView(createLiteralRow(it)) }
+        root.addView(createLiteralRow(listOf("-", "0", ".")))
+        root.addView(createCompactActionRow())
+    }
+
+    private fun renderPhoneKeyboard(root: LinearLayout) {
+        listOf(
+            listOf("1", "2", "3"),
+            listOf("4", "5", "6"),
+            listOf("7", "8", "9"),
+            listOf("*", "0", "#"),
+        ).forEach { root.addView(createLiteralRow(it)) }
+        root.addView(createLiteralRow(listOf("+", "-", "(" , ")")))
+        root.addView(createCompactActionRow())
     }
 
     private fun createCharacterRow(labels: List<String>) = LinearLayout(this).apply {
@@ -64,6 +131,12 @@ class KoreanKeyboardService : InputMethodService() {
         TwoBeolsikLayout.bottomRow.forEach { addView(createCharacterButton(it)) }
     }
 
+    private fun createLiteralRow(labels: List<String>) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER
+        labels.forEach { label -> addView(createLiteralButton(label)) }
+    }
+
     private fun createActionRow() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
@@ -74,6 +147,16 @@ class KoreanKeyboardService : InputMethodService() {
             currentInputConnection?.let { c -> commitPending(c); c.commitText(" ", 1) }
         })
         addView(createActionButton("Enter", 1.2f) { currentInputConnection?.let(::handleEnter) })
+        addView(createBackspaceButton())
+    }
+
+    private fun createCompactActionRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER
+        addView(createActionButton("NEXT", 1f) {
+            currentInputConnection?.let { c -> commitPending(c); switchToNextInputMethod(false) }
+        })
+        addView(createActionButton("Enter", 1.3f) { currentInputConnection?.let(::handleEnter) })
         addView(createBackspaceButton())
     }
 
@@ -88,6 +171,22 @@ class KoreanKeyboardService : InputMethodService() {
         setOnClickListener { handleCharacter(baseLabel) }
     }.also { button ->
         if (TwoBeolsikLayout.hasShiftVariant(baseLabel)) shiftedCharacterButtons += button to baseLabel
+    }
+
+    private fun createLiteralButton(label: String) = Button(this).apply {
+        text = label
+        textSize = 18f
+        isAllCaps = false
+        minWidth = 0
+        minimumWidth = 0
+        setPadding(dp(1), 0, dp(1), 0)
+        layoutParams = keyLayoutParams()
+        setOnClickListener {
+            currentInputConnection?.let { connection ->
+                commitPending(connection)
+                connection.commitText(label, 1)
+            }
+        }
     }
 
     private fun createActionButton(label: String, weight: Float, onClick: () -> Unit) = Button(this).apply {
