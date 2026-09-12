@@ -22,7 +22,7 @@ class KoreanKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
 
-            CHARACTER_ROWS.forEach { row ->
+            TwoBeolsikLayout.characterRows.forEach { row ->
                 addView(createCharacterRow(row))
             }
 
@@ -57,7 +57,7 @@ class KoreanKeyboardService : InputMethodService() {
                 shiftButton = it
             })
 
-            BOTTOM_ROW.forEach { baseLabel ->
+            TwoBeolsikLayout.bottomRow.forEach { baseLabel ->
                 addView(createCharacterButton(baseLabel))
             }
         }
@@ -103,7 +103,7 @@ class KoreanKeyboardService : InputMethodService() {
             layoutParams = keyLayoutParams()
             setOnClickListener { handleCharacter(baseLabel) }
         }.also { button ->
-            if (SHIFTED_KEYS.containsKey(baseLabel)) {
+            if (TwoBeolsikLayout.hasShiftVariant(baseLabel)) {
                 shiftedCharacterButtons += button to baseLabel
             }
         }
@@ -128,7 +128,7 @@ class KoreanKeyboardService : InputMethodService() {
 
     private fun handleCharacter(baseLabel: String) {
         val connection = currentInputConnection ?: return
-        val actualLabel = if (shiftEnabled) SHIFTED_KEYS[baseLabel] ?: baseLabel else baseLabel
+        val actualLabel = TwoBeolsikLayout.labelFor(baseLabel, shiftEnabled)
         val ch = actualLabel.singleOrNull() ?: return
 
         applyEdit(connection, composer.input(ch))
@@ -147,7 +147,7 @@ class KoreanKeyboardService : InputMethodService() {
         shiftEnabled = enabled
 
         shiftedCharacterButtons.forEach { (button, baseLabel) ->
-            button.text = if (enabled) SHIFTED_KEYS.getValue(baseLabel) else baseLabel
+            button.text = TwoBeolsikLayout.labelFor(baseLabel, enabled)
         }
         shiftButton?.isActivated = enabled
     }
@@ -192,23 +192,4 @@ class KoreanKeyboardService : InputMethodService() {
         }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    companion object {
-        private val CHARACTER_ROWS = listOf(
-            listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
-            listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
-        )
-
-        private val BOTTOM_ROW = listOf("ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ")
-
-        private val SHIFTED_KEYS = mapOf(
-            "ㅂ" to "ㅃ",
-            "ㅈ" to "ㅉ",
-            "ㄷ" to "ㄸ",
-            "ㄱ" to "ㄲ",
-            "ㅅ" to "ㅆ",
-            "ㅐ" to "ㅒ",
-            "ㅔ" to "ㅖ",
-        )
-    }
 }
