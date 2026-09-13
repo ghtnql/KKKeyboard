@@ -19,4 +19,10 @@ final class JapaneseTransliteratorTests: XCTestCase {
         XCTAssertTrue(JapaneseTransliterator.candidates(for: "미등록").isEmpty)
         XCTAssertTrue(JapaneseTransliterator.candidates(for: "   ").isEmpty)
     }
+
+    func testExactLookupDoesNotNormalizeHotPathInput() {
+        XCTAssertEqual(JapaneseTransliterator.candidatesExact(for: "아리가토"), ["ありがとう"])
+        XCTAssertTrue(JapaneseTransliterator.candidatesExact(for: " 아리가토 ").isEmpty)
+        XCTAssertTrue(JapaneseTransliterator.candidatesExact(for: "").isEmpty)
+    }
 }
