@@ -336,7 +336,7 @@ class KoreanKeyboardService : InputMethodService() {
             candidateInput.currentForLookup(
                 composer.currentText(),
                 JapaneseTransliterator.maxInputLength,
-            )?.let(JapaneseTransliterator::candidates) ?: emptyList()
+            )?.let(JapaneseTransliterator::candidatesExact) ?: emptyList()
         } else {
             emptyList()
         }
