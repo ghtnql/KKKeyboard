@@ -17,9 +17,11 @@ enum JapaneseTransliterator {
         "료코": ["りょこう"]
     ]
 
+    static let maxInputLength = seedCandidates.keys.map(\.count).max() ?? 0
+
     static func candidates(for inputHangul: String) -> [String] {
         let normalized = inputHangul.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty else { return [] }
+        guard !normalized.isEmpty, normalized.count <= maxInputLength else { return [] }
         return seedCandidates[normalized] ?? []
     }
 }
