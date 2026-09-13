@@ -19,9 +19,11 @@ object JapaneseTransliterator {
         "료코" to listOf("りょこう"),
     )
 
+    val maxInputLength: Int = seedCandidates.keys.maxOfOrNull(String::length) ?: 0
+
     fun candidates(inputHangul: String): List<String> {
         val normalized = inputHangul.trim()
-        if (normalized.isEmpty()) return emptyList()
+        if (normalized.isEmpty() || normalized.length > maxInputLength) return emptyList()
         return seedCandidates[normalized] ?: emptyList()
     }
 }
