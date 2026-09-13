@@ -1,6 +1,8 @@
 package com.ghtnql.kkkeyboard
 
 object TwoBeolsikLayout {
+    val auxiliaryNumberRow: List<String> = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+
     val characterRows: List<List<String>> = listOf(
         listOf("ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"),
         listOf("ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"),
