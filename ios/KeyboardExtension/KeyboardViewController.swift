@@ -249,10 +249,12 @@ final class KeyboardViewController: UIInputViewController {
 
     private func refreshCandidates(force: Bool = false) {
         let candidates: [String]
-        if japaneseCandidateMode && !symbolPage {
-            candidates = JapaneseTransliterator.candidates(
-                for: candidateInput.current(composing: composer.currentText())
-            )
+        if japaneseCandidateMode && !symbolPage,
+           let source = candidateInput.currentForLookup(
+               composing: composer.currentText(),
+               maxLength: JapaneseTransliterator.maxInputLength
+           ) {
+            candidates = JapaneseTransliterator.candidates(for: source)
         } else {
             candidates = []
         }
