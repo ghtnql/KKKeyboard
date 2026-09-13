@@ -50,11 +50,24 @@ jobs:
         working-directory: ios
         run: |
           set -o pipefail
+          rm -rf TestResults.xcresult
           xcodebuild \
             -project KKKeyboard.xcodeproj \
             -scheme KKKeyboard \
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            test 2>&1 | tee xcodebuild-test.log
+
+      - name: Upload unit-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-diagnostics
+          path: |
+            ios/xcodebuild-test.log
+            ios/TestResults.xcresult
+          if-no-files-found: warn
+          retention-days: 7
