@@ -26,6 +26,16 @@ class CandidateInputBuffer {
         }
     }
 
+    /**
+     * Returns the current token only when it can possibly match the local
+     * candidate source. The length check happens before constructing a String so
+     * long no-space input cannot cause an O(n) allocation on every key press.
+     */
+    fun currentForLookup(composing: String, maxLength: Int): String? {
+        if (maxLength <= 0 || token.length + composing.length > maxLength) return null
+        return current(composing)
+    }
+
     fun clear() {
         token.setLength(0)
     }
