@@ -31,11 +31,11 @@ class CandidateInputBufferTest {
     }
 
     @Test
-    fun `clear drops session token`() {
+    fun `clear drops committed session token while preserving current composition`() {
         val buffer = CandidateInputBuffer()
         buffer.apply(HangulComposer.Edit(commit = "곤니치"))
         buffer.clear()
 
-        assertEquals("", buffer.current("와"))
+        assertEquals("와", buffer.current("와"))
     }
 }
