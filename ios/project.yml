@@ -29,6 +29,7 @@ targets:
     platform: iOS
     sources:
       - KeyboardExtension
+      - Shared
     info:
       path: KeyboardExtension/Info.plist
     settings:
@@ -36,11 +37,25 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard.keyboard
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
+  KKKeyboardTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: KKKeyboardExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard.tests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   KKKeyboard:
     build:
       targets:
         KKKeyboardApp: all
         KKKeyboardExtension: all
+        KKKeyboardTests: [test]
     test:
       gatherCoverageData: false
+      targets:
+        - KKKeyboardTests
