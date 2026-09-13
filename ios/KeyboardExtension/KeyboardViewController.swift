@@ -7,12 +7,19 @@ final class KeyboardViewController: UIInputViewController {
     private var japaneseCandidateMode = false
     private var displayedCandidates: [String] = []
     private var shiftEnabled = false
+    private var symbolPage = false
     private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
+    private var characterButtons: [UIButton] = []
 
     private let keyboardStack = UIStackView()
     private let candidateRow = UIStackView()
     private var modeButton: UIButton?
     private var shiftButton: UIButton?
+    private var pageButton: UIButton?
+
+    private var hangulLabels: [String] {
+        TwoBeolsikLayout.characterRows.flatMap { $0 } + TwoBeolsikLayout.bottomRow
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -82,6 +89,10 @@ final class KeyboardViewController: UIInputViewController {
         modeButton = mode
         row.addArrangedSubview(mode)
         row.addArrangedSubview(makeButton(title: "🌐", action: #selector(handleNextKeyboard)))
+        let page = makeButton(title: "123", action: #selector(handlePageToggle))
+        page.accessibilityLabel = "숫자 및 기호"
+        pageButton = page
+        row.addArrangedSubview(page)
         row.addArrangedSubview(makeButton(title: "space", action: #selector(handleSpace)))
         row.addArrangedSubview(makeButton(title: "return", action: #selector(handleReturn)))
         row.addArrangedSubview(makeButton(title: "⌫", action: #selector(handleBackspace)))
@@ -109,6 +120,7 @@ final class KeyboardViewController: UIInputViewController {
     private func makeCharacterButton(baseLabel: String) -> UIButton {
         let button = makeButton(title: baseLabel, action: #selector(handleCharacter(_:)))
         button.accessibilityLabel = baseLabel
+        characterButtons.append(button)
         if TwoBeolsikLayout.hasShiftVariant(baseLabel) {
             shiftedCharacterButtons.append((button, baseLabel))
         }
@@ -116,7 +128,16 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func handleCharacter(_ sender: UIButton) {
-        guard let title = sender.currentTitle, let character = title.first else { return }
+        guard let title = sender.currentTitle, !title.isEmpty else { return }
+
+        if symbolPage {
+            commitPendingComposition()
+            clearCandidateTracking()
+            textDocumentProxy.insertText(title)
+            return
+        }
+
+        guard let character = title.first else { return }
         let edit = composer.input(character)
         candidateInput.apply(edit)
         apply(edit)
@@ -125,7 +146,15 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func handleShift() {
+        guard !symbolPage else { return }
         setShift(!shiftEnabled)
+    }
+
+    @objc private func handlePageToggle() {
+        commitPendingComposition()
+        clearCandidateTracking()
+        setShift(false)
+        setSymbolPage(!symbolPage)
     }
 
     @objc private func handleSpace() {
@@ -158,8 +187,6 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func handleModeToggle() {
-        // Treat a mode switch as an input boundary so a Korean token can never
-        // leak into a later Japanese lookup (or the reverse).
         commitPendingComposition()
         clearCandidateTracking()
         japaneseCandidateMode.toggle()
@@ -174,6 +201,11 @@ final class KeyboardViewController: UIInputViewController {
     private func setShift(_ enabled: Bool) {
         guard shiftEnabled != enabled else { return }
         shiftEnabled = enabled
+        guard !symbolPage else {
+            shiftButton?.isSelected = false
+            shiftButton?.accessibilityValue = "off"
+            return
+        }
         for item in shiftedCharacterButtons {
             item.button.setTitle(
                 TwoBeolsikLayout.label(for: item.baseLabel, shifted: enabled),
@@ -182,6 +214,21 @@ final class KeyboardViewController: UIInputViewController {
         }
         shiftButton?.isSelected = enabled
         shiftButton?.accessibilityValue = enabled ? "on" : "off"
+    }
+
+    private func setSymbolPage(_ enabled: Bool) {
+        guard symbolPage != enabled else { return }
+        symbolPage = enabled
+        let labels = enabled ? SymbolLayout.flattened : hangulLabels
+        guard labels.count == characterButtons.count else { return }
+
+        for (button, label) in zip(characterButtons, labels) {
+            button.setTitle(label, for: .normal)
+            button.accessibilityLabel = label
+        }
+        shiftButton?.isHidden = enabled
+        pageButton?.setTitle(enabled ? "가나다" : "123", for: .normal)
+        pageButton?.accessibilityLabel = enabled ? "한글 자판" : "숫자 및 기호"
     }
 
     private func apply(_ edit: HangulEdit) {
@@ -202,7 +249,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func refreshCandidates(force: Bool = false) {
         let candidates: [String]
-        if japaneseCandidateMode {
+        if japaneseCandidateMode && !symbolPage {
             candidates = JapaneseTransliterator.candidates(
                 for: candidateInput.current(composing: composer.currentText())
             )
