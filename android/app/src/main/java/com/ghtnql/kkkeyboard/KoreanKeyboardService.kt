@@ -14,13 +14,18 @@ import android.widget.LinearLayout
 
 class KoreanKeyboardService : InputMethodService() {
     private val composer = HangulComposer()
+    private val candidateInput = CandidateInputBuffer()
     private val shiftedCharacterButtons = mutableListOf<Pair<Button, String>>()
     private val handler = Handler(Looper.getMainLooper())
     private var shiftEnabled = false
     private var shiftButton: Button? = null
+    private var modeButton: Button? = null
     private var deleting = false
     private var keyboardRoot: LinearLayout? = null
+    private var candidateRow: LinearLayout? = null
     private var activeFieldMode = InputFieldMode.TEXT
+    private var japaneseCandidateMode = false
+    private var displayedCandidates: List<String> = emptyList()
 
     private val deleteRepeat = object : Runnable {
         override fun run() {
@@ -43,13 +48,7 @@ class KoreanKeyboardService : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         stopDeleteRepeat()
-
-        // A genuinely new editor session must never inherit an unfinished Hangul
-        // composition or one-shot Shift state from the previous app/field.
-        if (!restarting) {
-            composer.reset()
-            shiftEnabled = false
-        }
+        if (!restarting) resetInputState()
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -60,10 +59,7 @@ class KoreanKeyboardService : InputMethodService() {
         val modeChanged = nextMode != activeFieldMode
         activeFieldMode = nextMode
 
-        if (!restarting) {
-            composer.reset()
-            shiftEnabled = false
-        }
+        if (!restarting) resetInputState()
 
         keyboardRoot?.let { root ->
             if (!restarting || modeChanged) renderKeyboard(root, nextMode)
@@ -71,37 +67,47 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
-        // ACTION_UP/CANCEL is not guaranteed if the IME window disappears while
-        // Backspace is held. Always cancel the repeat callback when the view hides.
         stopDeleteRepeat()
         super.onFinishInputView(finishingInput)
     }
 
     override fun onWindowHidden() {
-        // Defensive cleanup for app switches, IME reselection and system-driven
-        // window dismissal. This keeps the main-loop delete runnable from surviving
-        // after the keyboard is no longer visible.
         stopDeleteRepeat()
         super.onWindowHidden()
     }
 
     override fun onFinishInput() {
         stopDeleteRepeat()
-        composer.reset()
-        shiftEnabled = false
+        resetInputState()
         super.onFinishInput()
     }
 
     override fun onDestroy() {
         stopDeleteRepeat()
         keyboardRoot = null
+        candidateRow = null
+        modeButton = null
         super.onDestroy()
+    }
+
+    private fun resetInputState() {
+        composer.reset()
+        candidateInput.clear()
+        shiftEnabled = false
+        displayedCandidates = emptyList()
+        candidateRow?.apply {
+            removeAllViews()
+            visibility = View.GONE
+        }
     }
 
     private fun renderKeyboard(root: LinearLayout, mode: InputFieldMode) {
         shiftedCharacterButtons.clear()
         shiftButton = null
+        modeButton = null
+        candidateRow = null
         shiftEnabled = false
+        displayedCandidates = emptyList()
         root.removeAllViews()
 
         when (mode) {
@@ -112,6 +118,7 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun renderTextKeyboard(root: LinearLayout, mode: InputFieldMode) {
+        root.addView(createCandidateRow().also { candidateRow = it })
         TwoBeolsikLayout.characterRows.forEach { root.addView(createCharacterRow(it)) }
         root.addView(createBottomCharacterRow())
 
@@ -141,8 +148,18 @@ class KoreanKeyboardService : InputMethodService() {
             listOf("7", "8", "9"),
             listOf("*", "0", "#"),
         ).forEach { root.addView(createLiteralRow(it)) }
-        root.addView(createLiteralRow(listOf("+", "-", "(" , ")")))
+        root.addView(createLiteralRow(listOf("+", "-", "(", ")")))
         root.addView(createCompactActionRow())
+    }
+
+    private fun createCandidateRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER
+        visibility = View.GONE
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
     }
 
     private fun createCharacterRow(labels: List<String>) = LinearLayout(this).apply {
@@ -167,13 +184,16 @@ class KoreanKeyboardService : InputMethodService() {
     private fun createActionRow() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
-        addView(createActionButton("NEXT", 1f) {
-            currentInputConnection?.let { c -> commitPending(c); switchToNextInputMethod(false) }
+        addView(createActionButton(if (japaneseCandidateMode) "日" else "한", 0.8f) {
+            toggleCandidateMode()
+        }.also { modeButton = it })
+        addView(createActionButton("NEXT", 0.9f) {
+            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextInputMethod(false) }
         })
-        addView(createActionButton("Space", 2.2f) {
-            currentInputConnection?.let { c -> commitPending(c); c.commitText(" ", 1) }
+        addView(createActionButton("Space", 1.8f) {
+            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); c.commitText(" ", 1) }
         })
-        addView(createActionButton("Enter", 1.2f) { currentInputConnection?.let(::handleEnter) })
+        addView(createActionButton("Enter", 1.1f) { currentInputConnection?.let(::handleEnter) })
         addView(createBackspaceButton())
     }
 
@@ -181,7 +201,7 @@ class KoreanKeyboardService : InputMethodService() {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
         addView(createActionButton("NEXT", 1f) {
-            currentInputConnection?.let { c -> commitPending(c); switchToNextInputMethod(false) }
+            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextInputMethod(false) }
         })
         addView(createActionButton("Enter", 1.3f) { currentInputConnection?.let(::handleEnter) })
         addView(createBackspaceButton())
@@ -211,6 +231,7 @@ class KoreanKeyboardService : InputMethodService() {
         setOnClickListener {
             currentInputConnection?.let { connection ->
                 commitPending(connection)
+                clearCandidateTracking()
                 connection.commitText(label, 1)
             }
         }
@@ -256,7 +277,10 @@ class KoreanKeyboardService : InputMethodService() {
     private fun handleCharacter(baseLabel: String) {
         val connection = currentInputConnection ?: return
         val ch = TwoBeolsikLayout.labelFor(baseLabel, shiftEnabled).singleOrNull() ?: return
-        applyEdit(connection, composer.input(ch))
+        val edit = composer.input(ch)
+        candidateInput.apply(edit)
+        applyEdit(connection, edit)
+        refreshCandidates()
         if (shiftEnabled) setShift(false)
     }
 
@@ -271,8 +295,58 @@ class KoreanKeyboardService : InputMethodService() {
         shiftButton?.isActivated = enabled
     }
 
+    private fun toggleCandidateMode() {
+        japaneseCandidateMode = !japaneseCandidateMode
+        modeButton?.text = if (japaneseCandidateMode) "日" else "한"
+        refreshCandidates(force = true)
+    }
+
+    private fun refreshCandidates(force: Boolean = false) {
+        val row = candidateRow ?: return
+        val candidates = if (japaneseCandidateMode) {
+            JapaneseTransliterator.candidates(candidateInput.current(composer.currentText()))
+        } else {
+            emptyList()
+        }
+
+        if (!force && candidates == displayedCandidates) return
+        displayedCandidates = candidates
+        row.removeAllViews()
+
+        if (candidates.isEmpty()) {
+            row.visibility = View.GONE
+            return
+        }
+
+        candidates.take(3).forEach { candidate ->
+            row.addView(createActionButton(candidate, 1f) { selectCandidate(candidate) })
+        }
+        row.visibility = View.VISIBLE
+    }
+
+    private fun selectCandidate(candidate: String) {
+        val connection = currentInputConnection ?: return
+        val source = candidateInput.current(composer.currentText())
+        if (source.isEmpty()) return
+
+        commitPending(connection)
+        connection.deleteSurroundingText(source.length, 0)
+        connection.commitText(candidate, 1)
+        clearCandidateTracking()
+    }
+
+    private fun clearCandidateTracking() {
+        candidateInput.clear()
+        displayedCandidates = emptyList()
+        candidateRow?.apply {
+            removeAllViews()
+            visibility = View.GONE
+        }
+    }
+
     private fun handleEnter(connection: InputConnection) {
         commitPending(connection)
+        clearCandidateTracking()
         val actionId = EnterActionResolver.actionId(currentInputEditorInfo?.imeOptions ?: 0)
         if (actionId != null) connection.performEditorAction(actionId)
         else sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
@@ -282,6 +356,8 @@ class KoreanKeyboardService : InputMethodService() {
         val edit = composer.backspace()
         if (!edit.consumed) {
             connection.deleteSurroundingText(1, 0)
+            candidateInput.removeCommittedCodePoint()
+            refreshCandidates()
             return
         }
         if (edit.composing.isNullOrEmpty()) {
@@ -290,6 +366,7 @@ class KoreanKeyboardService : InputMethodService() {
         } else {
             connection.setComposingText(edit.composing, 1)
         }
+        refreshCandidates()
     }
 
     private fun applyEdit(connection: InputConnection, edit: HangulComposer.Edit) {
