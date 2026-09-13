@@ -13,6 +13,10 @@ object JapaneseTransliterator {
         "아리가토" to listOf("ありがとう"),
         "곤니치와" to listOf("こんにちは"),
         "스시" to listOf("すし", "寿司"),
+        "코히" to listOf("コーヒー"),
+        "킷테" to listOf("きって"),
+        "온나" to listOf("おんな"),
+        "료코" to listOf("りょこう"),
     )
 
     fun candidates(inputHangul: String): List<String> {
