@@ -42,8 +42,7 @@ targets:
     platform: iOS
     sources:
       - Tests
-    dependencies:
-      - target: KKKeyboardExtension
+      - Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard.tests
