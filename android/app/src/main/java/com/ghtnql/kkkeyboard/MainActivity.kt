@@ -26,7 +26,7 @@ class MainActivity : Activity() {
         })
 
         root.addView(TextView(this).apply {
-            text = "1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 아래에서 키 높이를 선택할 수 있습니다."
+            text = "1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 아래에서 키 높이와 숫자열을 설정할 수 있습니다."
             textSize = 17f
             setPadding(0, 36, 0, 24)
         })
@@ -63,6 +63,27 @@ class MainActivity : Activity() {
             })
         }
         root.addView(heightRow)
+
+        val numberRowStatus = TextView(this).apply {
+            textSize = 16f
+            setPadding(0, 20, 0, 8)
+        }
+        val numberRowToggle = Button(this).apply { isAllCaps = false }
+
+        fun refreshNumberRowStatus() {
+            val enabled = KeyboardLayoutSettings.readNumberRowEnabled(this)
+            numberRowStatus.text = "보조 숫자열: ${if (enabled) "켜짐" else "꺼짐"}"
+            numberRowToggle.text = if (enabled) "숫자열 끄기" else "숫자열 켜기"
+        }
+
+        numberRowToggle.setOnClickListener {
+            val enabled = KeyboardLayoutSettings.readNumberRowEnabled(this@MainActivity)
+            KeyboardLayoutSettings.writeNumberRowEnabled(this@MainActivity, !enabled)
+            refreshNumberRowStatus()
+        }
+        refreshNumberRowStatus()
+        root.addView(numberRowStatus)
+        root.addView(numberRowToggle)
 
         root.addView(Button(this).apply {
             text = "키보드 활성화 설정 열기"
