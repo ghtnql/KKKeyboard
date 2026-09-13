@@ -26,6 +26,7 @@ class KoreanKeyboardService : InputMethodService() {
     private var activeFieldMode = InputFieldMode.TEXT
     private var japaneseCandidateMode = false
     private var displayedCandidates: List<String> = emptyList()
+    private var keyHeightDp = KeyboardHeight.NORMAL.keyHeightDp
 
     private val deleteRepeat = object : Runnable {
         override fun run() {
@@ -37,6 +38,7 @@ class KoreanKeyboardService : InputMethodService() {
 
     override fun onCreateInputView(): View {
         activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
+        keyHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
@@ -57,12 +59,15 @@ class KoreanKeyboardService : InputMethodService() {
 
         val nextMode = InputFieldModeResolver.fromInputType(info?.inputType ?: 0)
         val modeChanged = nextMode != activeFieldMode
+        val nextHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
+        val heightChanged = nextHeightDp != keyHeightDp
         activeFieldMode = nextMode
+        keyHeightDp = nextHeightDp
 
         if (!restarting) resetInputState()
 
         keyboardRoot?.let { root ->
-            if (!restarting || modeChanged) renderKeyboard(root, nextMode)
+            if (!restarting || modeChanged || heightChanged) renderKeyboard(root, nextMode)
         }
     }
 
@@ -388,7 +393,7 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun keyLayoutParams(weight: Float = 1f) =
-        LinearLayout.LayoutParams(0, dp(50), weight).apply { setMargins(dp(1), dp(2), dp(1), dp(2)) }
+        LinearLayout.LayoutParams(0, dp(keyHeightDp), weight).apply { setMargins(dp(1), dp(2), dp(1), dp(2)) }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
