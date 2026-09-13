@@ -16,6 +16,7 @@ class KoreanKeyboardService : InputMethodService() {
     private val composer = HangulComposer()
     private val candidateInput = CandidateInputBuffer()
     private val shiftedCharacterButtons = mutableListOf<Pair<Button, String>>()
+    private val candidateButtons = mutableListOf<Button>()
     private val handler = Handler(Looper.getMainLooper())
     private var shiftEnabled = false
     private var shiftButton: Button? = null
@@ -103,6 +104,7 @@ class KoreanKeyboardService : InputMethodService() {
         stopDeleteRepeat()
         keyboardRoot = null
         candidateRow = null
+        candidateButtons.clear()
         modeButton = null
         super.onDestroy()
     }
@@ -112,14 +114,12 @@ class KoreanKeyboardService : InputMethodService() {
         candidateInput.clear()
         shiftEnabled = false
         displayedCandidates = emptyList()
-        candidateRow?.apply {
-            removeAllViews()
-            visibility = View.GONE
-        }
+        hideCandidateButtons()
     }
 
     private fun renderKeyboard(root: LinearLayout, mode: InputFieldMode) {
         shiftedCharacterButtons.clear()
+        candidateButtons.clear()
         shiftButton = null
         modeButton = null
         candidateRow = null
@@ -178,6 +178,16 @@ class KoreanKeyboardService : InputMethodService() {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT,
         )
+        repeat(3) {
+            val button = createActionButton("", 1f) {}
+            button.visibility = View.GONE
+            button.setOnClickListener { view ->
+                val candidate = (view as Button).text.toString()
+                if (candidate.isNotEmpty()) selectCandidate(candidate)
+            }
+            candidateButtons += button
+            addView(button)
+        }
     }
 
     private fun createCharacterRow(labels: List<String>) = LinearLayout(this).apply {
@@ -333,17 +343,18 @@ class KoreanKeyboardService : InputMethodService() {
 
         if (!force && candidates == displayedCandidates) return
         displayedCandidates = candidates
-        row.removeAllViews()
 
-        if (candidates.isEmpty()) {
-            row.visibility = View.GONE
-            return
+        candidateButtons.forEachIndexed { index, button ->
+            val candidate = candidates.getOrNull(index)
+            if (candidate == null) {
+                button.text = ""
+                button.visibility = View.GONE
+            } else {
+                button.text = candidate
+                button.visibility = View.VISIBLE
+            }
         }
-
-        candidates.take(3).forEach { candidate ->
-            row.addView(createActionButton(candidate, 1f) { selectCandidate(candidate) })
-        }
-        row.visibility = View.VISIBLE
+        row.visibility = if (candidates.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun selectCandidate(candidate: String) {
@@ -360,10 +371,15 @@ class KoreanKeyboardService : InputMethodService() {
     private fun clearCandidateTracking() {
         candidateInput.clear()
         displayedCandidates = emptyList()
-        candidateRow?.apply {
-            removeAllViews()
-            visibility = View.GONE
+        hideCandidateButtons()
+    }
+
+    private fun hideCandidateButtons() {
+        candidateButtons.forEach { button ->
+            button.text = ""
+            button.visibility = View.GONE
         }
+        candidateRow?.visibility = View.GONE
     }
 
     private fun handleEnter(connection: InputConnection) {
