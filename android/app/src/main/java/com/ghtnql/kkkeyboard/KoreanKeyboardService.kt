@@ -27,6 +27,7 @@ class KoreanKeyboardService : InputMethodService() {
     private var japaneseCandidateMode = false
     private var displayedCandidates: List<String> = emptyList()
     private var keyHeightDp = KeyboardHeight.NORMAL.keyHeightDp
+    private var numberRowEnabled = false
 
     private val deleteRepeat = object : Runnable {
         override fun run() {
@@ -39,6 +40,7 @@ class KoreanKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
         keyHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
+        numberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this)
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
@@ -61,13 +63,16 @@ class KoreanKeyboardService : InputMethodService() {
         val modeChanged = nextMode != activeFieldMode
         val nextHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
         val heightChanged = nextHeightDp != keyHeightDp
+        val nextNumberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this)
+        val numberRowChanged = nextNumberRowEnabled != numberRowEnabled
         activeFieldMode = nextMode
         keyHeightDp = nextHeightDp
+        numberRowEnabled = nextNumberRowEnabled
 
         if (!restarting) resetInputState()
 
         keyboardRoot?.let { root ->
-            if (!restarting || modeChanged || heightChanged) renderKeyboard(root, nextMode)
+            if (!restarting || modeChanged || heightChanged || numberRowChanged) renderKeyboard(root, nextMode)
         }
     }
 
@@ -124,6 +129,7 @@ class KoreanKeyboardService : InputMethodService() {
 
     private fun renderTextKeyboard(root: LinearLayout, mode: InputFieldMode) {
         root.addView(createCandidateRow().also { candidateRow = it })
+        if (numberRowEnabled) root.addView(createLiteralRow(TwoBeolsikLayout.auxiliaryNumberRow))
         TwoBeolsikLayout.characterRows.forEach { root.addView(createCharacterRow(it)) }
         root.addView(createBottomCharacterRow())
 
@@ -301,9 +307,6 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun toggleCandidateMode() {
-        // A mode boundary is also an input boundary. Flush the current composing
-        // syllable and discard candidate tracking so text typed in Korean mode can
-        // never leak into a later Japanese lookup (and vice versa).
         currentInputConnection?.let(::commitPending)
         clearCandidateTracking()
         japaneseCandidateMode = !japaneseCandidateMode
