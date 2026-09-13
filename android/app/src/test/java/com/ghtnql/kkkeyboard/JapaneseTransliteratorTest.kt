@@ -34,7 +34,14 @@ class JapaneseTransliteratorTest {
     }
 
     @Test
+    fun exactLookupDoesNotNormalizeHotPathInput() {
+        assertEquals(listOf("ありがとう"), JapaneseTransliterator.candidatesExact("아리가토"))
+        assertTrue(JapaneseTransliterator.candidatesExact(" 아리가토 ").isEmpty())
+    }
+
+    @Test
     fun unsupportedInputReturnsNoCandidate() {
         assertTrue(JapaneseTransliterator.candidates("미등록입력").isEmpty())
+        assertTrue(JapaneseTransliterator.candidatesExact("").isEmpty())
     }
 }
