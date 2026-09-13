@@ -12,10 +12,10 @@ class HangulComposer {
     private var finalIndex = -1
 
     fun input(ch: Char): Edit {
-        val initialIndex = INITIALS.indexOf(ch)
+        val initialIndex = initialIndexOf(ch)
         if (initialIndex >= 0) return inputConsonant(ch, initialIndex)
 
-        val medialIndex = VOWELS.indexOf(ch)
+        val medialIndex = medialIndexOf(ch)
         if (medialIndex >= 0) return inputVowel(ch, medialIndex)
 
         val pending = flush()
@@ -27,12 +27,12 @@ class HangulComposer {
             finalIndex > 0 -> {
                 val currentFinal = FINALS[finalIndex]
                 val split = COMPOUND_FINAL_SPLIT[currentFinal]
-                finalIndex = if (split != null) FINALS.indexOf(split.first) else -1
+                finalIndex = if (split != null) finalIndexOf(split.first) else -1
             }
             medial >= 0 -> {
                 val currentMedial = VOWELS[medial]
                 val base = COMPOUND_MEDIAL_BASE[currentMedial]
-                medial = if (base != null) VOWELS.indexOf(base) else -1
+                medial = if (base != null) medialIndexOf(base) else -1
             }
             initial >= 0 -> initial = -1
             else -> return Edit(consumed = false)
@@ -78,7 +78,7 @@ class HangulComposer {
         }
 
         if (finalIndex < 0) {
-            val candidateFinal = FINALS.indexOf(ch)
+            val candidateFinal = finalIndexOf(ch)
             if (candidateFinal > 0) {
                 finalIndex = candidateFinal
                 return Edit(composing = currentText())
@@ -87,7 +87,7 @@ class HangulComposer {
             val currentFinal = FINALS[finalIndex]
             val compound = compoundFinal(currentFinal, ch)
             if (compound != null) {
-                finalIndex = FINALS.indexOf(compound)
+                finalIndex = finalIndexOf(compound)
                 return Edit(composing = currentText())
             }
         }
@@ -108,7 +108,7 @@ class HangulComposer {
 
             val compound = compoundMedial(VOWELS[medial], ch)
             if (compound != null) {
-                medial = VOWELS.indexOf(compound)
+                medial = medialIndexOf(compound)
                 return Edit(composing = currentText())
             }
 
@@ -127,9 +127,9 @@ class HangulComposer {
             val split = COMPOUND_FINAL_SPLIT[finalChar]
 
             if (split != null) {
-                finalIndex = FINALS.indexOf(split.first)
+                finalIndex = finalIndexOf(split.first)
                 val commit = currentText()
-                initial = INITIALS.indexOf(split.second)
+                initial = initialIndexOf(split.second)
                 medial = newMedial
                 finalIndex = -1
                 return Edit(commit = commit, composing = currentText())
@@ -137,7 +137,7 @@ class HangulComposer {
 
             finalIndex = -1
             val commit = currentText()
-            initial = INITIALS.indexOf(finalChar)
+            initial = initialIndexOf(finalChar)
             medial = newMedial
             finalIndex = -1
             return Edit(commit = commit, composing = currentText())
@@ -145,7 +145,7 @@ class HangulComposer {
 
         val compound = compoundMedial(VOWELS[medial], ch)
         if (compound != null) {
-            medial = VOWELS.indexOf(compound)
+            medial = medialIndexOf(compound)
             return Edit(composing = currentText())
         }
 
@@ -180,6 +180,88 @@ class HangulComposer {
             'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ',
             'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
         )
+
+        /** O(1) hot-path lookup; avoids scanning INITIALS for every key input. */
+        private fun initialIndexOf(ch: Char): Int = when (ch) {
+            'ㄱ' -> 0
+            'ㄲ' -> 1
+            'ㄴ' -> 2
+            'ㄷ' -> 3
+            'ㄸ' -> 4
+            'ㄹ' -> 5
+            'ㅁ' -> 6
+            'ㅂ' -> 7
+            'ㅃ' -> 8
+            'ㅅ' -> 9
+            'ㅆ' -> 10
+            'ㅇ' -> 11
+            'ㅈ' -> 12
+            'ㅉ' -> 13
+            'ㅊ' -> 14
+            'ㅋ' -> 15
+            'ㅌ' -> 16
+            'ㅍ' -> 17
+            'ㅎ' -> 18
+            else -> -1
+        }
+
+        /** O(1) hot-path lookup; avoids scanning VOWELS for every key input. */
+        private fun medialIndexOf(ch: Char): Int = when (ch) {
+            'ㅏ' -> 0
+            'ㅐ' -> 1
+            'ㅑ' -> 2
+            'ㅒ' -> 3
+            'ㅓ' -> 4
+            'ㅔ' -> 5
+            'ㅕ' -> 6
+            'ㅖ' -> 7
+            'ㅗ' -> 8
+            'ㅘ' -> 9
+            'ㅙ' -> 10
+            'ㅚ' -> 11
+            'ㅛ' -> 12
+            'ㅜ' -> 13
+            'ㅝ' -> 14
+            'ㅞ' -> 15
+            'ㅟ' -> 16
+            'ㅠ' -> 17
+            'ㅡ' -> 18
+            'ㅢ' -> 19
+            'ㅣ' -> 20
+            else -> -1
+        }
+
+        /** O(1) hot-path lookup; avoids scanning FINALS during composition/splitting. */
+        private fun finalIndexOf(ch: Char): Int = when (ch) {
+            'ㄱ' -> 1
+            'ㄲ' -> 2
+            'ㄳ' -> 3
+            'ㄴ' -> 4
+            'ㄵ' -> 5
+            'ㄶ' -> 6
+            'ㄷ' -> 7
+            'ㄹ' -> 8
+            'ㄺ' -> 9
+            'ㄻ' -> 10
+            'ㄼ' -> 11
+            'ㄽ' -> 12
+            'ㄾ' -> 13
+            'ㄿ' -> 14
+            'ㅀ' -> 15
+            'ㅁ' -> 16
+            'ㅂ' -> 17
+            'ㅄ' -> 18
+            'ㅅ' -> 19
+            'ㅆ' -> 20
+            'ㅇ' -> 21
+            'ㅈ' -> 22
+            'ㅊ' -> 23
+            'ㅋ' -> 24
+            'ㅌ' -> 25
+            'ㅍ' -> 26
+            'ㅎ' -> 27
+            else -> -1
+        }
 
         /**
          * Hot-path lookup without allocating Pair keys for every vowel input.
