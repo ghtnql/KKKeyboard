@@ -32,4 +32,18 @@ final class CandidateInputBufferTests: XCTestCase {
         buffer.apply(HangulEdit(commit: "입", composing: "력"))
         XCTAssertEqual(buffer.current(composing: "력"), "미등록입력")
     }
+
+    func testLookupSkipsStringConstructionAfterDictionaryMaximumWhilePreservingSource() {
+        let buffer = CandidateInputBuffer()
+        let longToken = String(repeating: "가", count: JapaneseTransliterator.maxInputLength + 32)
+        buffer.apply(HangulEdit(commit: longToken))
+
+        XCTAssertNil(
+            buffer.currentForLookup(
+                composing: "나",
+                maxLength: JapaneseTransliterator.maxInputLength
+            )
+        )
+        XCTAssertEqual(buffer.current(composing: "나"), longToken + "나")
+    }
 }
