@@ -42,9 +42,9 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        let orientation: KeyboardOrientation = size.width > size.height ? .landscape : .portrait
         coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-            self?.applyLayoutProfile(for: orientation)
+            guard let self else { return }
+            self.applyLayoutProfile(for: self.currentOrientation())
         }
     }
 
