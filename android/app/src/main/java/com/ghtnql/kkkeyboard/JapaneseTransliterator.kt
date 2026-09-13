@@ -21,9 +21,16 @@ object JapaneseTransliterator {
 
     val maxInputLength: Int = seedCandidates.keys.maxOfOrNull(String::length) ?: 0
 
-    fun candidates(inputHangul: String): List<String> {
-        val normalized = inputHangul.trim()
-        if (normalized.isEmpty() || normalized.length > maxInputLength) return emptyList()
-        return seedCandidates[normalized] ?: emptyList()
+    /**
+     * Convenience lookup for non-hot-path callers that may provide surrounding
+     * whitespace. Keyboard input should use [candidatesExact] because its token
+     * buffer is already normalized and trimming on every key press allocates.
+     */
+    fun candidates(inputHangul: String): List<String> = candidatesExact(inputHangul.trim())
+
+    /** Allocation-light lookup for the already-normalized IME token. */
+    fun candidatesExact(inputHangul: String): List<String> {
+        if (inputHangul.isEmpty() || inputHangul.length > maxInputLength) return emptyList()
+        return seedCandidates[inputHangul] ?: emptyList()
     }
 }
