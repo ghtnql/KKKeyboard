@@ -71,7 +71,7 @@ class MainActivity : Activity() {
         root.addView(heightStatus)
 
         val heightRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            this.orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
         listOf(
