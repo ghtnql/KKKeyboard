@@ -26,6 +26,7 @@ class KoreanKeyboardService : InputMethodService() {
     private var activeFieldMode = InputFieldMode.TEXT
     private var japaneseCandidateMode = false
     private var displayedCandidates: List<String> = emptyList()
+    private var layoutOrientation = KeyboardOrientation.PORTRAIT
     private var keyHeightDp = KeyboardHeight.NORMAL.keyHeightDp
     private var numberRowEnabled = false
 
@@ -39,8 +40,9 @@ class KoreanKeyboardService : InputMethodService() {
 
     override fun onCreateInputView(): View {
         activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
-        keyHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
-        numberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this)
+        layoutOrientation = currentKeyboardOrientation()
+        keyHeightDp = KeyboardLayoutSettings.readHeight(this, layoutOrientation).keyHeightDp
+        numberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, layoutOrientation)
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
@@ -61,18 +63,23 @@ class KoreanKeyboardService : InputMethodService() {
 
         val nextMode = InputFieldModeResolver.fromInputType(info?.inputType ?: 0)
         val modeChanged = nextMode != activeFieldMode
-        val nextHeightDp = KeyboardLayoutSettings.readHeight(this).keyHeightDp
+        val nextOrientation = currentKeyboardOrientation()
+        val orientationChanged = nextOrientation != layoutOrientation
+        val nextHeightDp = KeyboardLayoutSettings.readHeight(this, nextOrientation).keyHeightDp
         val heightChanged = nextHeightDp != keyHeightDp
-        val nextNumberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this)
+        val nextNumberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, nextOrientation)
         val numberRowChanged = nextNumberRowEnabled != numberRowEnabled
         activeFieldMode = nextMode
+        layoutOrientation = nextOrientation
         keyHeightDp = nextHeightDp
         numberRowEnabled = nextNumberRowEnabled
 
         if (!restarting) resetInputState()
 
         keyboardRoot?.let { root ->
-            if (!restarting || modeChanged || heightChanged || numberRowChanged) renderKeyboard(root, nextMode)
+            if (!restarting || modeChanged || orientationChanged || heightChanged || numberRowChanged) {
+                renderKeyboard(root, nextMode)
+            }
         }
     }
 
@@ -394,6 +401,9 @@ class KoreanKeyboardService : InputMethodService() {
         if (pending.isNotEmpty()) connection.commitText(pending, 1)
         else connection.finishComposingText()
     }
+
+    private fun currentKeyboardOrientation(): KeyboardOrientation =
+        KeyboardOrientation.fromConfigurationOrientation(resources.configuration.orientation)
 
     private fun keyLayoutParams(weight: Float = 1f) =
         LinearLayout.LayoutParams(0, dp(keyHeightDp), weight).apply { setMargins(dp(1), dp(2), dp(1), dp(2)) }
