@@ -1,6 +1,7 @@
 package com.ghtnql.kkkeyboard
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -51,5 +52,15 @@ class CandidateInputBufferTest {
 
         buffer.apply(HangulComposer.Edit(commit = "입", composing = "력"))
         assertEquals("미등록입력", buffer.current("력"))
+    }
+
+    @Test
+    fun `lookup skips string construction after dictionary maximum while preserving source`() {
+        val buffer = CandidateInputBuffer()
+        val longToken = "가".repeat(JapaneseTransliterator.maxInputLength + 32)
+        buffer.apply(HangulComposer.Edit(commit = longToken))
+
+        assertNull(buffer.currentForLookup("나", JapaneseTransliterator.maxInputLength))
+        assertEquals(longToken + "나", buffer.current("나"))
     }
 }
