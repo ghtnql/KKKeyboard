@@ -21,6 +21,14 @@ class JapaneseTransliteratorTest {
     }
 
     @Test
+    fun coversLongVowelSokuonNasalAndYouonFixtures() {
+        assertEquals(listOf("コーヒー"), JapaneseTransliterator.candidates("코히"))
+        assertEquals(listOf("きって"), JapaneseTransliterator.candidates("킷테"))
+        assertEquals(listOf("おんな"), JapaneseTransliterator.candidates("온나"))
+        assertEquals(listOf("りょこう"), JapaneseTransliterator.candidates("료코"))
+    }
+
+    @Test
     fun ignoresOuterWhitespaceWithoutNetworkOrFallbackGuessing() {
         assertEquals(listOf("ありがとう"), JapaneseTransliterator.candidates("  아리가토  "))
     }
