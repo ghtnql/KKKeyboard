@@ -308,7 +308,10 @@ class KoreanKeyboardService : InputMethodService() {
     private fun refreshCandidates(force: Boolean = false) {
         val row = candidateRow ?: return
         val candidates = if (japaneseCandidateMode) {
-            JapaneseTransliterator.candidates(candidateInput.current(composer.currentText()))
+            candidateInput.currentForLookup(
+                composer.currentText(),
+                JapaneseTransliterator.maxInputLength,
+            )?.let(JapaneseTransliterator::candidates) ?: emptyList()
         } else {
             emptyList()
         }
