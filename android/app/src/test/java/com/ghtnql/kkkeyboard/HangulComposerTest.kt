@@ -43,6 +43,27 @@ class HangulComposerTest {
     }
 
     @Test
+    fun preservesAllCompoundVowelMappings() {
+        val cases = listOf(
+            Triple('ㅗ', 'ㅏ', "과"),
+            Triple('ㅗ', 'ㅐ', "괘"),
+            Triple('ㅗ', 'ㅣ', "괴"),
+            Triple('ㅜ', 'ㅓ', "궈"),
+            Triple('ㅜ', 'ㅔ', "궤"),
+            Triple('ㅜ', 'ㅣ', "귀"),
+            Triple('ㅡ', 'ㅣ', "긔"),
+        )
+
+        cases.forEach { (first, second, expected) ->
+            val c = HangulComposer()
+            c.input('ㄱ')
+            c.input(first)
+            c.input(second)
+            assertEquals(expected, c.currentText())
+        }
+    }
+
+    @Test
     fun composesCompoundFinalAndSplitsItBeforeVowel() {
         val c = HangulComposer()
         c.input('ㄱ')
@@ -54,6 +75,32 @@ class HangulComposerTest {
         val edit = c.input('ㅏ')
         assertEquals("갑", edit.commit)
         assertEquals("사", edit.composing)
+    }
+
+    @Test
+    fun preservesAllCompoundFinalMappings() {
+        val cases = listOf(
+            Triple('ㄱ', 'ㅅ', "갃"),
+            Triple('ㄴ', 'ㅈ', "갅"),
+            Triple('ㄴ', 'ㅎ', "갆"),
+            Triple('ㄹ', 'ㄱ', "갉"),
+            Triple('ㄹ', 'ㅁ', "갊"),
+            Triple('ㄹ', 'ㅂ', "갋"),
+            Triple('ㄹ', 'ㅅ', "갌"),
+            Triple('ㄹ', 'ㅌ', "갍"),
+            Triple('ㄹ', 'ㅍ', "갎"),
+            Triple('ㄹ', 'ㅎ', "갏"),
+            Triple('ㅂ', 'ㅅ', "값"),
+        )
+
+        cases.forEach { (first, second, expected) ->
+            val c = HangulComposer()
+            c.input('ㄱ')
+            c.input('ㅏ')
+            c.input(first)
+            c.input(second)
+            assertEquals(expected, c.currentText())
+        }
     }
 
     @Test
