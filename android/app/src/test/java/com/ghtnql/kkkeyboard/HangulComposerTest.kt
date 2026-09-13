@@ -23,6 +23,56 @@ class HangulComposerTest {
     }
 
     @Test
+    fun preservesAllInitialIndexes() {
+        val initials = charArrayOf(
+            'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ',
+            'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+        )
+
+        initials.forEachIndexed { index, initial ->
+            val c = HangulComposer()
+            c.input(initial)
+            c.input('ㅏ')
+            val expected = (0xAC00 + index * 21 * 28).toChar().toString()
+            assertEquals(expected, c.currentText())
+        }
+    }
+
+    @Test
+    fun preservesAllMedialIndexes() {
+        val vowels = charArrayOf(
+            'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
+            'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ',
+        )
+
+        vowels.forEachIndexed { index, vowel ->
+            val c = HangulComposer()
+            c.input('ㄱ')
+            c.input(vowel)
+            val expected = (0xAC00 + index * 28).toChar().toString()
+            assertEquals(expected, c.currentText())
+        }
+    }
+
+    @Test
+    fun preservesAllFinalIndexes() {
+        val finals = charArrayOf(
+            'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ',
+            'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ',
+            'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+        )
+
+        finals.forEachIndexed { index, final ->
+            val c = HangulComposer()
+            c.input('ㄱ')
+            c.input('ㅏ')
+            c.input(final)
+            val expected = (0xAC00 + index + 1).toChar().toString()
+            assertEquals(expected, c.currentText())
+        }
+    }
+
+    @Test
     fun movesSimpleFinalToNextSyllableWhenVowelFollows() {
         val c = HangulComposer()
         c.input('ㄱ')
