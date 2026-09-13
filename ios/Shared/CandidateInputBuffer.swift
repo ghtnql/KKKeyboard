@@ -23,6 +23,13 @@ final class CandidateInputBuffer {
         token + composing
     }
 
+    /// Avoid constructing a growing String on every key press once the current
+    /// token is longer than any local candidate key can possibly match.
+    func currentForLookup(composing: String, maxLength: Int) -> String? {
+        guard maxLength > 0, token.count + composing.count <= maxLength else { return nil }
+        return current(composing: composing)
+    }
+
     func clear() {
         token.removeAll(keepingCapacity: true)
     }
