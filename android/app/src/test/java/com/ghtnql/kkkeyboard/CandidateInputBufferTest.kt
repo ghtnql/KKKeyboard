@@ -1,6 +1,7 @@
 package com.ghtnql.kkkeyboard
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CandidateInputBufferTest {
@@ -37,5 +38,18 @@ class CandidateInputBufferTest {
         buffer.clear()
 
         assertEquals("와", buffer.current("와"))
+    }
+
+    @Test
+    fun `unsupported japanese lookup leaves tracked Hangul available for continued input`() {
+        val buffer = CandidateInputBuffer()
+        buffer.apply(HangulComposer.Edit(commit = "미등록", composing = "입"))
+
+        val sourceBeforeLookup = buffer.current("입")
+        assertTrue(JapaneseTransliterator.candidates(sourceBeforeLookup).isEmpty())
+        assertEquals("미등록입", buffer.current("입"))
+
+        buffer.apply(HangulComposer.Edit(commit = "입", composing = "력"))
+        assertEquals("미등록입력", buffer.current("력"))
     }
 }
