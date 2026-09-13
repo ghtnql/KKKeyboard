@@ -85,4 +85,21 @@ class HangulComposerTest {
         assertEquals(null, last.composing)
         assertFalse(c.backspace().consumed)
     }
+
+    @Test
+    fun repeatedFastCompositionDoesNotLoseOrLeakState() {
+        val c = HangulComposer()
+        val output = StringBuilder()
+
+        repeat(2_000) {
+            c.input('ㅎ')
+            c.input('ㅏ')
+            c.input('ㄴ')
+            output.append(c.flush())
+            assertEquals("", c.currentText())
+        }
+
+        assertEquals(2_000, output.length)
+        assertEquals("한".repeat(2_000), output.toString())
+    }
 }
