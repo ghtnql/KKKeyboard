@@ -85,7 +85,7 @@ class HangulComposer {
             }
         } else {
             val currentFinal = FINALS[finalIndex]
-            val compound = COMPOUND_FINALS[currentFinal to ch]
+            val compound = compoundFinal(currentFinal, ch)
             if (compound != null) {
                 finalIndex = FINALS.indexOf(compound)
                 return Edit(composing = currentText())
@@ -106,7 +106,7 @@ class HangulComposer {
                 return Edit(composing = currentText())
             }
 
-            val compound = COMPOUND_MEDIALS[VOWELS[medial] to ch]
+            val compound = compoundMedial(VOWELS[medial], ch)
             if (compound != null) {
                 medial = VOWELS.indexOf(compound)
                 return Edit(composing = currentText())
@@ -143,7 +143,7 @@ class HangulComposer {
             return Edit(commit = commit, composing = currentText())
         }
 
-        val compound = COMPOUND_MEDIALS[VOWELS[medial] to ch]
+        val compound = compoundMedial(VOWELS[medial], ch)
         if (compound != null) {
             medial = VOWELS.indexOf(compound)
             return Edit(composing = currentText())
@@ -181,15 +181,25 @@ class HangulComposer {
             'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
         )
 
-        private val COMPOUND_MEDIALS = mapOf(
-            ('ㅗ' to 'ㅏ') to 'ㅘ',
-            ('ㅗ' to 'ㅐ') to 'ㅙ',
-            ('ㅗ' to 'ㅣ') to 'ㅚ',
-            ('ㅜ' to 'ㅓ') to 'ㅝ',
-            ('ㅜ' to 'ㅔ') to 'ㅞ',
-            ('ㅜ' to 'ㅣ') to 'ㅟ',
-            ('ㅡ' to 'ㅣ') to 'ㅢ',
-        )
+        /**
+         * Hot-path lookup without allocating Pair keys for every vowel input.
+         */
+        private fun compoundMedial(first: Char, second: Char): Char? = when (first) {
+            'ㅗ' -> when (second) {
+                'ㅏ' -> 'ㅘ'
+                'ㅐ' -> 'ㅙ'
+                'ㅣ' -> 'ㅚ'
+                else -> null
+            }
+            'ㅜ' -> when (second) {
+                'ㅓ' -> 'ㅝ'
+                'ㅔ' -> 'ㅞ'
+                'ㅣ' -> 'ㅟ'
+                else -> null
+            }
+            'ㅡ' -> if (second == 'ㅣ') 'ㅢ' else null
+            else -> null
+        }
 
         private val COMPOUND_MEDIAL_BASE = mapOf(
             'ㅘ' to 'ㅗ', 'ㅙ' to 'ㅗ', 'ㅚ' to 'ㅗ',
@@ -197,19 +207,29 @@ class HangulComposer {
             'ㅢ' to 'ㅡ',
         )
 
-        private val COMPOUND_FINALS = mapOf(
-            ('ㄱ' to 'ㅅ') to 'ㄳ',
-            ('ㄴ' to 'ㅈ') to 'ㄵ',
-            ('ㄴ' to 'ㅎ') to 'ㄶ',
-            ('ㄹ' to 'ㄱ') to 'ㄺ',
-            ('ㄹ' to 'ㅁ') to 'ㄻ',
-            ('ㄹ' to 'ㅂ') to 'ㄼ',
-            ('ㄹ' to 'ㅅ') to 'ㄽ',
-            ('ㄹ' to 'ㅌ') to 'ㄾ',
-            ('ㄹ' to 'ㅍ') to 'ㄿ',
-            ('ㄹ' to 'ㅎ') to 'ㅀ',
-            ('ㅂ' to 'ㅅ') to 'ㅄ',
-        )
+        /**
+         * Hot-path lookup without allocating Pair keys for every consonant input.
+         */
+        private fun compoundFinal(first: Char, second: Char): Char? = when (first) {
+            'ㄱ' -> if (second == 'ㅅ') 'ㄳ' else null
+            'ㄴ' -> when (second) {
+                'ㅈ' -> 'ㄵ'
+                'ㅎ' -> 'ㄶ'
+                else -> null
+            }
+            'ㄹ' -> when (second) {
+                'ㄱ' -> 'ㄺ'
+                'ㅁ' -> 'ㄻ'
+                'ㅂ' -> 'ㄼ'
+                'ㅅ' -> 'ㄽ'
+                'ㅌ' -> 'ㄾ'
+                'ㅍ' -> 'ㄿ'
+                'ㅎ' -> 'ㅀ'
+                else -> null
+            }
+            'ㅂ' -> if (second == 'ㅅ') 'ㅄ' else null
+            else -> null
+        }
 
         private val COMPOUND_FINAL_SPLIT = mapOf(
             'ㄳ' to ('ㄱ' to 'ㅅ'),
