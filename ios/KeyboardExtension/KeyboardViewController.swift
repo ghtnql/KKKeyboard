@@ -13,6 +13,7 @@ final class KeyboardViewController: UIInputViewController {
     private var layoutOrientation: KeyboardOrientation = .portrait
     private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
     private var characterButtons: [UIButton] = []
+    private var candidateButtons: [UIButton] = []
 
     private let keyboardStack = UIStackView()
     private let candidateRow = UIStackView()
@@ -90,6 +91,13 @@ final class KeyboardViewController: UIInputViewController {
         candidateRow.spacing = 4
         candidateRow.distribution = .fillEqually
         candidateRow.isHidden = true
+
+        candidateButtons = (0..<3).map { _ in
+            let button = makeButton(title: "", action: #selector(handleCandidate(_:)))
+            button.isHidden = true
+            candidateRow.addArrangedSubview(button)
+            return button
+        }
     }
 
     private func configureNumberRow() {
@@ -282,7 +290,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func handleCandidate(_ sender: UIButton) {
-        guard let candidate = sender.currentTitle else { return }
+        guard let candidate = sender.currentTitle, !candidate.isEmpty else { return }
         selectCandidate(candidate)
     }
 
@@ -365,20 +373,17 @@ final class KeyboardViewController: UIInputViewController {
 
         if !force && candidates == displayedCandidates { return }
         displayedCandidates = candidates
-        candidateRow.arrangedSubviews.forEach {
-            candidateRow.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
 
-        guard !candidates.isEmpty else {
-            candidateRow.isHidden = true
-            return
+        for (index, button) in candidateButtons.enumerated() {
+            if index < candidates.count {
+                button.setTitle(candidates[index], for: .normal)
+                button.isHidden = false
+            } else {
+                button.setTitle("", for: .normal)
+                button.isHidden = true
+            }
         }
-
-        for candidate in candidates.prefix(3) {
-            candidateRow.addArrangedSubview(makeButton(title: candidate, action: #selector(handleCandidate(_:))))
-        }
-        candidateRow.isHidden = false
+        candidateRow.isHidden = candidates.isEmpty
     }
 
     private func selectCandidate(_ candidate: String) {
@@ -414,9 +419,9 @@ final class KeyboardViewController: UIInputViewController {
     private func clearCandidateTracking() {
         candidateInput.clear()
         displayedCandidates = []
-        candidateRow.arrangedSubviews.forEach {
-            candidateRow.removeArrangedSubview($0)
-            $0.removeFromSuperview()
+        for button in candidateButtons {
+            button.setTitle("", for: .normal)
+            button.isHidden = true
         }
         candidateRow.isHidden = true
     }
