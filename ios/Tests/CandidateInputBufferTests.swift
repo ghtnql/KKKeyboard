@@ -46,4 +46,17 @@ final class CandidateInputBufferTests: XCTestCase {
         )
         XCTAssertEqual(buffer.current(composing: "나"), longToken + "나")
     }
+
+    func testLookupLengthTrackingStaysCorrectAfterBackspaceAndClear() {
+        let buffer = CandidateInputBuffer()
+        buffer.apply(HangulEdit(commit: "가나다"))
+
+        XCTAssertNil(buffer.currentForLookup(composing: "라", maxLength: 3))
+
+        buffer.removeCommittedCharacter()
+        XCTAssertEqual(buffer.currentForLookup(composing: "라", maxLength: 3), "가나라")
+
+        buffer.apply(HangulEdit(commit: " "))
+        XCTAssertEqual(buffer.currentForLookup(composing: "마", maxLength: 1), "마")
+    }
 }
