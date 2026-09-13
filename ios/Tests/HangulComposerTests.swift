@@ -1,5 +1,4 @@
 import XCTest
-@testable import KKKeyboardExtension
 
 final class HangulComposerTests: XCTestCase {
     func testComposesSimpleSyllable() {
