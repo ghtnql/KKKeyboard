@@ -6,10 +6,13 @@ final class KeyboardViewController: UIInputViewController {
     private var renderedComposition = ""
     private var japaneseCandidateMode = false
     private var displayedCandidates: [String] = []
+    private var shiftEnabled = false
+    private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
 
     private let keyboardStack = UIStackView()
     private let candidateRow = UIStackView()
     private var modeButton: UIButton?
+    private var shiftButton: UIButton?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,6 +22,7 @@ final class KeyboardViewController: UIInputViewController {
     override func viewWillDisappear(_ animated: Bool) {
         commitPendingComposition()
         clearCandidateTracking()
+        setShift(false)
         super.viewWillDisappear(animated)
     }
 
@@ -31,9 +35,8 @@ final class KeyboardViewController: UIInputViewController {
 
         configureCandidateRow()
         keyboardStack.addArrangedSubview(candidateRow)
-        addCharacterRow(["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"])
-        addCharacterRow(["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"])
-        addCharacterRow(["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"])
+        TwoBeolsikLayout.characterRows.forEach(addCharacterRow)
+        addBottomCharacterRow()
         addControlRow()
 
         view.addSubview(keyboardStack)
@@ -53,12 +56,22 @@ final class KeyboardViewController: UIInputViewController {
         candidateRow.isHidden = true
     }
 
-    private func addCharacterRow(_ characters: [Character]) {
+    private func addCharacterRow(_ characters: [String]) {
         let row = makeRow()
         for character in characters {
-            let button = makeButton(title: String(character), action: #selector(handleCharacter(_:)))
-            button.accessibilityLabel = String(character)
-            row.addArrangedSubview(button)
+            row.addArrangedSubview(makeCharacterButton(baseLabel: character))
+        }
+        keyboardStack.addArrangedSubview(row)
+    }
+
+    private func addBottomCharacterRow() {
+        let row = makeRow()
+        let shift = makeButton(title: "Shift", action: #selector(handleShift))
+        shift.accessibilityLabel = "Shift"
+        shiftButton = shift
+        row.addArrangedSubview(shift)
+        for character in TwoBeolsikLayout.bottomRow {
+            row.addArrangedSubview(makeCharacterButton(baseLabel: character))
         }
         keyboardStack.addArrangedSubview(row)
     }
@@ -70,6 +83,7 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(mode)
         row.addArrangedSubview(makeButton(title: "🌐", action: #selector(handleNextKeyboard)))
         row.addArrangedSubview(makeButton(title: "space", action: #selector(handleSpace)))
+        row.addArrangedSubview(makeButton(title: "return", action: #selector(handleReturn)))
         row.addArrangedSubview(makeButton(title: "⌫", action: #selector(handleBackspace)))
         keyboardStack.addArrangedSubview(row)
     }
@@ -92,18 +106,38 @@ final class KeyboardViewController: UIInputViewController {
         return button
     }
 
+    private func makeCharacterButton(baseLabel: String) -> UIButton {
+        let button = makeButton(title: baseLabel, action: #selector(handleCharacter(_:)))
+        button.accessibilityLabel = baseLabel
+        if TwoBeolsikLayout.hasShiftVariant(baseLabel) {
+            shiftedCharacterButtons.append((button, baseLabel))
+        }
+        return button
+    }
+
     @objc private func handleCharacter(_ sender: UIButton) {
         guard let title = sender.currentTitle, let character = title.first else { return }
         let edit = composer.input(character)
         candidateInput.apply(edit)
         apply(edit)
         refreshCandidates()
+        if shiftEnabled { setShift(false) }
+    }
+
+    @objc private func handleShift() {
+        setShift(!shiftEnabled)
     }
 
     @objc private func handleSpace() {
         commitPendingComposition()
         clearCandidateTracking()
         textDocumentProxy.insertText(" ")
+    }
+
+    @objc private func handleReturn() {
+        commitPendingComposition()
+        clearCandidateTracking()
+        textDocumentProxy.insertText("\n")
     }
 
     @objc private func handleBackspace() {
@@ -135,6 +169,19 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func handleCandidate(_ sender: UIButton) {
         guard let candidate = sender.currentTitle else { return }
         selectCandidate(candidate)
+    }
+
+    private func setShift(_ enabled: Bool) {
+        guard shiftEnabled != enabled else { return }
+        shiftEnabled = enabled
+        for item in shiftedCharacterButtons {
+            item.button.setTitle(
+                TwoBeolsikLayout.label(for: item.baseLabel, shifted: enabled),
+                for: .normal
+            )
+        }
+        shiftButton?.isSelected = enabled
+        shiftButton?.accessibilityValue = enabled ? "on" : "off"
     }
 
     private func apply(_ edit: HangulEdit) {
