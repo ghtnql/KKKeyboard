@@ -28,4 +28,12 @@ class TwoBeolsikLayoutTest {
         assertFalse(TwoBeolsikLayout.hasShiftVariant("ㅏ"))
         assertTrue(TwoBeolsikLayout.hasShiftVariant("ㄱ"))
     }
+
+    @Test
+    fun auxiliaryNumberRowHasStableTenKeyOrder() {
+        assertEquals(
+            listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
+            TwoBeolsikLayout.auxiliaryNumberRow,
+        )
+    }
 }
