@@ -10,7 +10,11 @@ enum JapaneseTransliterator {
     private static let seedCandidates: [String: [String]] = [
         "아리가토": ["ありがとう"],
         "곤니치와": ["こんにちは"],
-        "스시": ["すし", "寿司"]
+        "스시": ["すし", "寿司"],
+        "코히": ["コーヒー"],
+        "킷테": ["きって"],
+        "온나": ["おんな"],
+        "료코": ["りょこう"]
     ]
 
     static func candidates(for inputHangul: String) -> [String] {
