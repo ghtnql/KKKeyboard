@@ -19,9 +19,14 @@ enum JapaneseTransliterator {
 
     static let maxInputLength = seedCandidates.keys.map(\.count).max() ?? 0
 
+    /// Convenience lookup for non-hot-path callers that may contain whitespace.
     static func candidates(for inputHangul: String) -> [String] {
-        let normalized = inputHangul.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty, normalized.count <= maxInputLength else { return [] }
-        return seedCandidates[normalized] ?? []
+        candidatesExact(for: inputHangul.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// Allocation-light lookup for the IME token, which is already normalized.
+    static func candidatesExact(for inputHangul: String) -> [String] {
+        guard !inputHangul.isEmpty, inputHangul.count <= maxInputLength else { return [] }
+        return seedCandidates[inputHangul] ?? []
     }
 }
