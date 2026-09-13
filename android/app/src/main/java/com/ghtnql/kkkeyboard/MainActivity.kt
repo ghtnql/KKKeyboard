@@ -26,10 +26,43 @@ class MainActivity : Activity() {
         })
 
         root.addView(TextView(this).apply {
-            text = "1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 현재 MVP는 기본 한글 조합 입력을 검증합니다."
+            text = "1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 아래에서 키 높이를 선택할 수 있습니다."
             textSize = 17f
-            setPadding(0, 36, 0, 36)
+            setPadding(0, 36, 0, 24)
         })
+
+        val heightStatus = TextView(this).apply {
+            textSize = 16f
+            setPadding(0, 0, 0, 12)
+        }
+
+        fun refreshHeightStatus() {
+            val height = KeyboardLayoutSettings.readHeight(this)
+            heightStatus.text = "키 높이: ${height.name.lowercase()} (${height.keyHeightDp}dp)"
+        }
+
+        refreshHeightStatus()
+        root.addView(heightStatus)
+
+        val heightRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        listOf(
+            "작게" to KeyboardHeight.COMPACT,
+            "기본" to KeyboardHeight.NORMAL,
+            "크게" to KeyboardHeight.TALL,
+        ).forEach { (label, height) ->
+            heightRow.addView(Button(this).apply {
+                text = label
+                isAllCaps = false
+                setOnClickListener {
+                    KeyboardLayoutSettings.writeHeight(this@MainActivity, height)
+                    refreshHeightStatus()
+                }
+            })
+        }
+        root.addView(heightRow)
 
         root.addView(Button(this).apply {
             text = "키보드 활성화 설정 열기"
