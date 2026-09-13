@@ -1,6 +1,7 @@
 package com.ghtnql.kkkeyboard
 
 import android.content.Context
+import android.content.res.Configuration
 
 /**
  * Small, allocation-free-at-input-time layout settings surface.
@@ -18,32 +19,54 @@ enum class KeyboardHeight(val persistedValue: String, val keyHeightDp: Int) {
     }
 }
 
+enum class KeyboardOrientation(val preferenceSuffix: String) {
+    PORTRAIT("portrait"),
+    LANDSCAPE("landscape"),
+    ;
+
+    companion object {
+        fun fromConfigurationOrientation(orientation: Int): KeyboardOrientation =
+            if (orientation == Configuration.ORIENTATION_LANDSCAPE) LANDSCAPE else PORTRAIT
+    }
+}
+
 object KeyboardLayoutSettings {
     private const val PREFS_NAME = "keyboard_layout"
-    private const val KEY_HEIGHT = "height"
-    private const val KEY_NUMBER_ROW = "number_row"
+    private const val LEGACY_KEY_HEIGHT = "height"
+    private const val LEGACY_KEY_NUMBER_ROW = "number_row"
 
-    fun readHeight(context: Context): KeyboardHeight {
-        val value = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_HEIGHT, null)
+    private fun heightKey(orientation: KeyboardOrientation) = "height_${orientation.preferenceSuffix}"
+    private fun numberRowKey(orientation: KeyboardOrientation) = "number_row_${orientation.preferenceSuffix}"
+
+    fun readHeight(context: Context, orientation: KeyboardOrientation): KeyboardHeight {
+        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val value = preferences.getString(
+            heightKey(orientation),
+            preferences.getString(LEGACY_KEY_HEIGHT, null),
+        )
         return KeyboardHeight.fromPersistedValue(value)
     }
 
-    fun writeHeight(context: Context, height: KeyboardHeight) {
+    fun writeHeight(context: Context, orientation: KeyboardOrientation, height: KeyboardHeight) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_HEIGHT, height.persistedValue)
+            .putString(heightKey(orientation), height.persistedValue)
             .apply()
     }
 
-    fun readNumberRowEnabled(context: Context): Boolean =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getBoolean(KEY_NUMBER_ROW, false)
+    fun readNumberRowEnabled(context: Context, orientation: KeyboardOrientation): Boolean {
+        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return if (preferences.contains(numberRowKey(orientation))) {
+            preferences.getBoolean(numberRowKey(orientation), false)
+        } else {
+            preferences.getBoolean(LEGACY_KEY_NUMBER_ROW, false)
+        }
+    }
 
-    fun writeNumberRowEnabled(context: Context, enabled: Boolean) {
+    fun writeNumberRowEnabled(context: Context, orientation: KeyboardOrientation, enabled: Boolean) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putBoolean(KEY_NUMBER_ROW, enabled)
+            .putBoolean(numberRowKey(orientation), enabled)
             .apply()
     }
 }
