@@ -1,6 +1,5 @@
 package com.ghtnql.kkkeyboard
 
-import android.content.res.Configuration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -25,15 +24,11 @@ class KeyboardLayoutSettingsTest {
     }
 
     @Test
-    fun orientationProfilesMapFromAndroidConfiguration() {
-        assertEquals(
-            KeyboardOrientation.PORTRAIT,
-            KeyboardOrientation.fromConfigurationOrientation(Configuration.ORIENTATION_PORTRAIT),
-        )
-        assertEquals(
-            KeyboardOrientation.LANDSCAPE,
-            KeyboardOrientation.fromConfigurationOrientation(Configuration.ORIENTATION_LANDSCAPE),
-        )
+    fun orientationProfilesMapFromAndroidConfigurationValues() {
+        // Android Configuration orientation values: undefined=0, portrait=1, landscape=2.
+        assertEquals(KeyboardOrientation.PORTRAIT, KeyboardOrientation.fromConfigurationOrientation(0))
+        assertEquals(KeyboardOrientation.PORTRAIT, KeyboardOrientation.fromConfigurationOrientation(1))
+        assertEquals(KeyboardOrientation.LANDSCAPE, KeyboardOrientation.fromConfigurationOrientation(2))
     }
 
     @Test
