@@ -1,7 +1,6 @@
 package com.ghtnql.kkkeyboard
 
 import android.content.Context
-import android.content.res.Configuration
 
 /**
  * Small, allocation-free-at-input-time layout settings surface.
@@ -25,8 +24,12 @@ enum class KeyboardOrientation(val preferenceSuffix: String) {
     ;
 
     companion object {
+        // Android Configuration.ORIENTATION_LANDSCAPE is 2. Keep the mapper pure so
+        // local JVM tests do not need Android framework classes on their execution path.
+        private const val ANDROID_ORIENTATION_LANDSCAPE = 2
+
         fun fromConfigurationOrientation(orientation: Int): KeyboardOrientation =
-            if (orientation == Configuration.ORIENTATION_LANDSCAPE) LANDSCAPE else PORTRAIT
+            if (orientation == ANDROID_ORIENTATION_LANDSCAPE) LANDSCAPE else PORTRAIT
     }
 }
 
