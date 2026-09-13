@@ -47,4 +47,21 @@ final class HangulComposerTests: XCTestCase {
         XCTAssertEqual(composer.currentText(), "")
         XCTAssertFalse(composer.backspace().consumed)
     }
+
+    func testRepeatedFastCompositionDoesNotLoseOrLeakState() {
+        let composer = HangulComposer()
+        var output = ""
+        output.reserveCapacity(2_000)
+
+        for _ in 0..<2_000 {
+            _ = composer.input("ㅎ")
+            _ = composer.input("ㅏ")
+            _ = composer.input("ㄴ")
+            output += composer.flush()
+            XCTAssertEqual(composer.currentText(), "")
+        }
+
+        XCTAssertEqual(output.count, 2_000)
+        XCTAssertEqual(output, String(repeating: "한", count: 2_000))
+    }
 }
