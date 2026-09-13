@@ -3,19 +3,27 @@ import UIKit
 final class KeyboardViewController: UIInputViewController {
     private let composer = HangulComposer()
     private let candidateInput = CandidateInputBuffer()
+    private let layoutSettings = KeyboardLayoutSettings()
     private var renderedComposition = ""
     private var japaneseCandidateMode = false
     private var displayedCandidates: [String] = []
     private var shiftEnabled = false
     private var symbolPage = false
+    private var settingsVisible = false
+    private var layoutOrientation: KeyboardOrientation = .portrait
     private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
     private var characterButtons: [UIButton] = []
 
     private let keyboardStack = UIStackView()
     private let candidateRow = UIStackView()
+    private let numberRow = UIStackView()
+    private let settingsRow = UIStackView()
     private var modeButton: UIButton?
     private var shiftButton: UIButton?
     private var pageButton: UIButton?
+    private var heightButton: UIButton?
+    private var numberRowButton: UIButton?
+    private var keyboardHeightConstraint: NSLayoutConstraint?
 
     private var hangulLabels: [String] {
         TwoBeolsikLayout.characterRows.flatMap { $0 } + TwoBeolsikLayout.bottomRow
@@ -24,6 +32,20 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureKeyboard()
+        applyLayoutProfile(for: currentOrientation())
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyLayoutProfile(for: currentOrientation())
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        let orientation: KeyboardOrientation = size.width > size.height ? .landscape : .portrait
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.applyLayoutProfile(for: orientation)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -42,17 +64,24 @@ final class KeyboardViewController: UIInputViewController {
 
         configureCandidateRow()
         keyboardStack.addArrangedSubview(candidateRow)
+        configureNumberRow()
+        keyboardStack.addArrangedSubview(numberRow)
         TwoBeolsikLayout.characterRows.forEach(addCharacterRow)
         addBottomCharacterRow()
         addControlRow()
+        configureSettingsRow()
+        keyboardStack.addArrangedSubview(settingsRow)
 
         view.addSubview(keyboardStack)
+        let heightConstraint = view.heightAnchor.constraint(equalToConstant: CGFloat(KeyboardLayoutSettings.defaultHeight))
+        heightConstraint.priority = UILayoutPriority(999)
+        keyboardHeightConstraint = heightConstraint
         NSLayoutConstraint.activate([
             keyboardStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 6),
             keyboardStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
             keyboardStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
             keyboardStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
-            keyboardStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 180)
+            heightConstraint
         ])
     }
 
@@ -61,6 +90,33 @@ final class KeyboardViewController: UIInputViewController {
         candidateRow.spacing = 4
         candidateRow.distribution = .fillEqually
         candidateRow.isHidden = true
+    }
+
+    private func configureNumberRow() {
+        numberRow.axis = .horizontal
+        numberRow.spacing = 4
+        numberRow.distribution = .fillEqually
+        numberRow.isHidden = true
+        for digit in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] {
+            numberRow.addArrangedSubview(makeButton(title: digit, action: #selector(handleDirectInput(_:))))
+        }
+    }
+
+    private func configureSettingsRow() {
+        settingsRow.axis = .horizontal
+        settingsRow.spacing = 4
+        settingsRow.distribution = .fillEqually
+        settingsRow.isHidden = true
+
+        let height = makeButton(title: "높이", action: #selector(handleHeightCycle))
+        heightButton = height
+        settingsRow.addArrangedSubview(height)
+
+        let numbers = makeButton(title: "숫자열", action: #selector(handleNumberRowToggle))
+        numberRowButton = numbers
+        settingsRow.addArrangedSubview(numbers)
+
+        settingsRow.addArrangedSubview(makeButton(title: "닫기", action: #selector(handleSettingsToggle)))
     }
 
     private func addCharacterRow(_ characters: [String]) {
@@ -91,6 +147,8 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(makeButton(title: "🌐", action: #selector(handleNextKeyboard)))
         let page = makeButton(title: "123", action: #selector(handlePageToggle))
         page.accessibilityLabel = "숫자 및 기호"
+        page.accessibilityHint = "길게 누르면 레이아웃 설정"
+        page.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(handlePageLongPress(_:))))
         pageButton = page
         row.addArrangedSubview(page)
         row.addArrangedSubview(makeButton(title: "space", action: #selector(handleSpace)))
@@ -145,6 +203,13 @@ final class KeyboardViewController: UIInputViewController {
         if shiftEnabled { setShift(false) }
     }
 
+    @objc private func handleDirectInput(_ sender: UIButton) {
+        guard let title = sender.currentTitle, !title.isEmpty else { return }
+        commitPendingComposition()
+        clearCandidateTracking()
+        textDocumentProxy.insertText(title)
+    }
+
     @objc private func handleShift() {
         guard !symbolPage else { return }
         setShift(!shiftEnabled)
@@ -155,6 +220,29 @@ final class KeyboardViewController: UIInputViewController {
         clearCandidateTracking()
         setShift(false)
         setSymbolPage(!symbolPage)
+    }
+
+    @objc private func handlePageLongPress(_ recognizer: UILongPressGestureRecognizer) {
+        guard recognizer.state == .began else { return }
+        handleSettingsToggle()
+    }
+
+    @objc private func handleSettingsToggle() {
+        settingsVisible.toggle()
+        settingsRow.isHidden = !settingsVisible
+    }
+
+    @objc private func handleHeightCycle() {
+        let profile = layoutSettings.profile(for: layoutOrientation)
+        let nextHeight = layoutSettings.nextHeight(after: profile.height)
+        layoutSettings.setHeight(nextHeight, for: layoutOrientation)
+        applyLayoutProfile(for: layoutOrientation)
+    }
+
+    @objc private func handleNumberRowToggle() {
+        let profile = layoutSettings.profile(for: layoutOrientation)
+        layoutSettings.setNumberRowEnabled(!profile.numberRowEnabled, for: layoutOrientation)
+        applyLayoutProfile(for: layoutOrientation)
     }
 
     @objc private func handleSpace() {
@@ -196,6 +284,22 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func handleCandidate(_ sender: UIButton) {
         guard let candidate = sender.currentTitle else { return }
         selectCandidate(candidate)
+    }
+
+    private func currentOrientation() -> KeyboardOrientation {
+        if let interfaceOrientation = view.window?.windowScene?.interfaceOrientation {
+            return interfaceOrientation.isLandscape ? .landscape : .portrait
+        }
+        return UIScreen.main.bounds.width > UIScreen.main.bounds.height ? .landscape : .portrait
+    }
+
+    private func applyLayoutProfile(for orientation: KeyboardOrientation) {
+        layoutOrientation = orientation
+        let profile = layoutSettings.profile(for: orientation)
+        keyboardHeightConstraint?.constant = CGFloat(profile.height)
+        numberRow.isHidden = !profile.numberRowEnabled
+        heightButton?.setTitle("높이 \(profile.height)", for: .normal)
+        numberRowButton?.setTitle(profile.numberRowEnabled ? "숫자열 켬" : "숫자열 끔", for: .normal)
     }
 
     private func setShift(_ enabled: Bool) {
