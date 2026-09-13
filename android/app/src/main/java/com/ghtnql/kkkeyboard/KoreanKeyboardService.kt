@@ -296,9 +296,13 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun toggleCandidateMode() {
+        // A mode boundary is also an input boundary. Flush the current composing
+        // syllable and discard candidate tracking so text typed in Korean mode can
+        // never leak into a later Japanese lookup (and vice versa).
+        currentInputConnection?.let(::commitPending)
+        clearCandidateTracking()
         japaneseCandidateMode = !japaneseCandidateMode
         modeButton?.text = if (japaneseCandidateMode) "日" else "한"
-        refreshCandidates(force = true)
     }
 
     private fun refreshCandidates(force: Boolean = false) {
