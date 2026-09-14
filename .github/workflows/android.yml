@@ -5,10 +5,12 @@ on:
     branches: [main, "bootstrap/**"]
     paths:
       - "android/**"
+      - "shared/**"
       - ".github/workflows/android.yml"
   pull_request:
     paths:
       - "android/**"
+      - "shared/**"
       - ".github/workflows/android.yml"
 
 jobs:
