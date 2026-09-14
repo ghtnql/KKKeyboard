@@ -55,18 +55,42 @@ class HangulComposerTest {
     }
 
     @Test
-    fun preservesAllFinalIndexes() {
-        val finals = charArrayOf(
-            'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ',
-            'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ',
-            'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+    fun preservesAllFinalIndexesThroughRealKeySequences() {
+        val finalKeySequences = listOf(
+            charArrayOf('ㄱ'),
+            charArrayOf('ㄲ'),
+            charArrayOf('ㄱ', 'ㅅ'),
+            charArrayOf('ㄴ'),
+            charArrayOf('ㄴ', 'ㅈ'),
+            charArrayOf('ㄴ', 'ㅎ'),
+            charArrayOf('ㄷ'),
+            charArrayOf('ㄹ'),
+            charArrayOf('ㄹ', 'ㄱ'),
+            charArrayOf('ㄹ', 'ㅁ'),
+            charArrayOf('ㄹ', 'ㅂ'),
+            charArrayOf('ㄹ', 'ㅅ'),
+            charArrayOf('ㄹ', 'ㅌ'),
+            charArrayOf('ㄹ', 'ㅍ'),
+            charArrayOf('ㄹ', 'ㅎ'),
+            charArrayOf('ㅁ'),
+            charArrayOf('ㅂ'),
+            charArrayOf('ㅂ', 'ㅅ'),
+            charArrayOf('ㅅ'),
+            charArrayOf('ㅆ'),
+            charArrayOf('ㅇ'),
+            charArrayOf('ㅈ'),
+            charArrayOf('ㅊ'),
+            charArrayOf('ㅋ'),
+            charArrayOf('ㅌ'),
+            charArrayOf('ㅍ'),
+            charArrayOf('ㅎ'),
         )
 
-        finals.forEachIndexed { index, final ->
+        finalKeySequences.forEachIndexed { index, keys ->
             val c = HangulComposer()
             c.input('ㄱ')
             c.input('ㅏ')
-            c.input(final)
+            keys.forEach(c::input)
             val expected = (0xAC00 + index + 1).toChar().toString()
             assertEquals(expected, c.currentText())
         }
