@@ -1,6 +1,7 @@
 package com.ghtnql.kkkeyboard
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,6 +40,18 @@ class CandidateInputBufferTest {
         buffer.clear()
 
         assertEquals("와", buffer.current("와"))
+    }
+
+    @Test
+    fun `reports committed candidate state without building a source string`() {
+        val buffer = CandidateInputBuffer()
+        assertFalse(buffer.hasCommittedToken())
+
+        buffer.apply(HangulComposer.Edit(commit = "스"))
+        assertTrue(buffer.hasCommittedToken())
+
+        buffer.clear()
+        assertFalse(buffer.hasCommittedToken())
     }
 
     @Test
