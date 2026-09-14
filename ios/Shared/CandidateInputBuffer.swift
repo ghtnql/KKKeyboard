@@ -8,12 +8,6 @@ final class CandidateInputBuffer {
     // candidate length rejection stays O(1) as the token grows during typing.
     private var tokenCharacterCount = 0
 
-    /// O(1) state check for document-change safety. Avoids rebuilding or scanning
-    /// the tracked token just to decide whether stale candidate state must be reset.
-    var hasCommittedToken: Bool {
-        tokenCharacterCount > 0
-    }
-
     func apply(_ edit: HangulEdit) {
         for character in edit.commit {
             if character.isHangulSyllableOrJamo {
