@@ -13,26 +13,35 @@ final class ViewController: UIViewController {
         let titleLabel = UILabel()
         titleLabel.font = .preferredFont(forTextStyle: .title1)
         titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.text = "ㅋㅋ키보드 시작하기"
+        titleLabel.text = NSLocalizedString("onboarding.title", comment: "Onboarding title")
 
         let instructionLabel = UILabel()
         instructionLabel.numberOfLines = 0
         instructionLabel.font = .preferredFont(forTextStyle: .body)
         instructionLabel.adjustsFontForContentSizeCategory = true
-        instructionLabel.text = "1. 설정 > 일반 > 키보드 > 키보드에서 ‘새로운 키보드 추가’를 선택하세요.\n2. ㅋㅋ키보드를 추가하세요.\n3. 아래 입력칸을 눌러 🌐 키로 ㅋㅋ키보드를 선택하고 입력을 확인하세요.\n\n핵심 입력에는 전체 접근 허용이 필요하지 않습니다."
+        instructionLabel.text = NSLocalizedString("onboarding.instructions", comment: "Keyboard activation instructions")
 
         let settingsButton = UIButton(type: .system)
         settingsButton.configuration = .filled()
-        settingsButton.configuration?.title = "설정 열기"
+        settingsButton.configuration?.title = NSLocalizedString(
+            "onboarding.settings_button",
+            comment: "Open system settings button"
+        )
         settingsButton.addTarget(self, action: #selector(openSettings), for: .touchUpInside)
 
         testField.borderStyle = .roundedRect
-        testField.placeholder = "여기서 키보드 입력 테스트"
+        testField.placeholder = NSLocalizedString(
+            "onboarding.test_placeholder",
+            comment: "Keyboard test field placeholder"
+        )
         testField.clearButtonMode = .whileEditing
         testField.autocorrectionType = .no
         testField.autocapitalizationType = .none
         testField.returnKeyType = .done
-        testField.accessibilityLabel = "ㅋㅋ키보드 입력 테스트"
+        testField.accessibilityLabel = NSLocalizedString(
+            "onboarding.test_accessibility",
+            comment: "Keyboard test field accessibility label"
+        )
         testField.delegate = self
 
         let stack = UIStackView(arrangedSubviews: [titleLabel, instructionLabel, settingsButton, testField])
