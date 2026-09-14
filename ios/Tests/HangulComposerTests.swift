@@ -54,24 +54,24 @@ final class HangulComposerTests: XCTestCase {
     }
 
     func testAllCompoundFinalsComposeAndSplit() {
-        let cases: [(Character, Character, String, String, String)] = [
-            ("ㄱ", "ㅅ", "넋", "넉", "사"),
-            ("ㄴ", "ㅈ", "앉", "안", "자"),
-            ("ㄴ", "ㅎ", "많", "만", "하"),
-            ("ㄹ", "ㄱ", "닭", "달", "가"),
-            ("ㄹ", "ㅁ", "삶", "살", "마"),
-            ("ㄹ", "ㅂ", "밟", "발", "바"),
-            ("ㄹ", "ㅅ", "핥", "할", "사"),
-            ("ㄹ", "ㅌ", "핥", "할", "타"),
-            ("ㄹ", "ㅍ", "읊", "을", "파"),
-            ("ㄹ", "ㅎ", "잃", "일", "하"),
-            ("ㅂ", "ㅅ", "값", "갑", "사")
+        let cases: [(Character, Character, Character, Character, String, String, String)] = [
+            ("ㄴ", "ㅓ", "ㄱ", "ㅅ", "넋", "넉", "사"),
+            ("ㅇ", "ㅏ", "ㄴ", "ㅈ", "앉", "안", "자"),
+            ("ㅁ", "ㅏ", "ㄴ", "ㅎ", "많", "만", "하"),
+            ("ㄷ", "ㅏ", "ㄹ", "ㄱ", "닭", "달", "가"),
+            ("ㅅ", "ㅏ", "ㄹ", "ㅁ", "삶", "살", "마"),
+            ("ㅂ", "ㅏ", "ㄹ", "ㅂ", "밟", "발", "바"),
+            ("ㄱ", "ㅗ", "ㄹ", "ㅅ", "곬", "골", "사"),
+            ("ㅎ", "ㅏ", "ㄹ", "ㅌ", "핥", "할", "타"),
+            ("ㅇ", "ㅡ", "ㄹ", "ㅍ", "읊", "을", "파"),
+            ("ㅇ", "ㅣ", "ㄹ", "ㅎ", "잃", "일", "하"),
+            ("ㄱ", "ㅏ", "ㅂ", "ㅅ", "값", "갑", "사")
         ]
 
-        for (firstFinal, secondFinal, expectedCompound, expectedCommit, expectedNext) in cases {
+        for (initial, medial, firstFinal, secondFinal, expectedCompound, expectedCommit, expectedNext) in cases {
             let composer = HangulComposer()
-            _ = composer.input(expectedCompound == "넋" ? "ㄴ" : expectedCompound == "앉" ? "ㅇ" : expectedCompound == "많" ? "ㅁ" : expectedCompound == "닭" ? "ㄷ" : expectedCompound == "삶" ? "ㅅ" : expectedCompound == "밟" ? "ㅂ" : expectedCompound == "핥" ? "ㅎ" : expectedCompound == "읊" ? "ㅇ" : expectedCompound == "잃" ? "ㅇ" : "ㄱ")
-            _ = composer.input(expectedCompound == "넋" ? "ㅓ" : expectedCompound == "앉" ? "ㅏ" : expectedCompound == "많" ? "ㅏ" : expectedCompound == "닭" ? "ㅏ" : expectedCompound == "삶" ? "ㅏ" : expectedCompound == "밟" ? "ㅏ" : expectedCompound == "핥" ? "ㅏ" : expectedCompound == "읊" ? "ㅡ" : expectedCompound == "잃" ? "ㅣ" : "ㅏ")
+            _ = composer.input(initial)
+            _ = composer.input(medial)
             _ = composer.input(firstFinal)
             XCTAssertEqual(composer.input(secondFinal).composing, expectedCompound)
 
