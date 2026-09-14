@@ -3,7 +3,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="ㅋㅋ키보드"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -19,7 +19,7 @@
         <service
             android:name=".KoreanKeyboardService"
             android:exported="true"
-            android:label="ㅋㅋ키보드"
+            android:label="@string/app_name"
             android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>
                 <action android:name="android.view.InputMethod" />
