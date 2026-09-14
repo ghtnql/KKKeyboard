@@ -10,6 +10,7 @@ final class KeyboardViewController: UIInputViewController {
     private var shiftEnabled = false
     private var symbolPage = false
     private var settingsVisible = false
+    private var isMutatingDocument = false
     private var layoutOrientation: KeyboardOrientation = .portrait
     private var settingsTargetOrientation: KeyboardOrientation = .portrait
     private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
@@ -58,6 +59,16 @@ final class KeyboardViewController: UIInputViewController {
         clearCandidateTracking()
         setShift(false)
         super.viewWillDisappear(animated)
+    }
+
+    override func textWillChange(_ textInput: UITextInput?) {
+        super.textWillChange(textInput)
+        discardPendingStateForExternalDocumentChange()
+    }
+
+    override func selectionWillChange(_ textInput: UITextInput?) {
+        super.selectionWillChange(textInput)
+        discardPendingStateForExternalDocumentChange()
     }
 
     private func configureKeyboard() {
@@ -229,7 +240,7 @@ final class KeyboardViewController: UIInputViewController {
         if symbolPage {
             commitPendingComposition()
             clearCandidateTracking()
-            textDocumentProxy.insertText(title)
+            mutateDocument { textDocumentProxy.insertText(title) }
             return
         }
 
@@ -245,7 +256,7 @@ final class KeyboardViewController: UIInputViewController {
         guard let title = sender.currentTitle, !title.isEmpty else { return }
         commitPendingComposition()
         clearCandidateTracking()
-        textDocumentProxy.insertText(title)
+        mutateDocument { textDocumentProxy.insertText(title) }
     }
 
     @objc private func handleShift() {
@@ -324,13 +335,13 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func handleSpace() {
         commitPendingComposition()
         clearCandidateTracking()
-        textDocumentProxy.insertText(" ")
+        mutateDocument { textDocumentProxy.insertText(" ") }
     }
 
     @objc private func handleReturn() {
         commitPendingComposition()
         clearCandidateTracking()
-        textDocumentProxy.insertText("\n")
+        mutateDocument { textDocumentProxy.insertText("\n") }
     }
 
     @objc private func handleBackspace() {
@@ -338,7 +349,7 @@ final class KeyboardViewController: UIInputViewController {
         if edit.consumed {
             apply(edit)
         } else {
-            textDocumentProxy.deleteBackward()
+            mutateDocument { textDocumentProxy.deleteBackward() }
             candidateInput.removeCommittedCharacter()
         }
         refreshCandidates()
@@ -395,7 +406,7 @@ final class KeyboardViewController: UIInputViewController {
     private func moveCursor(by offset: Int) {
         commitPendingComposition()
         clearCandidateTracking()
-        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        mutateDocument { textDocumentProxy.adjustTextPosition(byCharacterOffset: offset) }
     }
 
     private func setShift(_ enabled: Bool) {
@@ -432,18 +443,20 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func apply(_ edit: HangulEdit) {
-        if !renderedComposition.isEmpty {
-            textDocumentProxy.deleteBackward()
-            renderedComposition = ""
-        }
+        mutateDocument {
+            if !renderedComposition.isEmpty {
+                textDocumentProxy.deleteBackward()
+                renderedComposition = ""
+            }
 
-        if !edit.commit.isEmpty {
-            textDocumentProxy.insertText(edit.commit)
-        }
+            if !edit.commit.isEmpty {
+                textDocumentProxy.insertText(edit.commit)
+            }
 
-        if let composing = edit.composing, !composing.isEmpty {
-            textDocumentProxy.insertText(composing)
-            renderedComposition = composing
+            if let composing = edit.composing, !composing.isEmpty {
+                textDocumentProxy.insertText(composing)
+                renderedComposition = composing
+            }
         }
     }
 
@@ -479,20 +492,24 @@ final class KeyboardViewController: UIInputViewController {
         guard !source.isEmpty else { return }
 
         commitPendingComposition()
-        for _ in source {
-            textDocumentProxy.deleteBackward()
+        mutateDocument {
+            for _ in source {
+                textDocumentProxy.deleteBackward()
+            }
+            textDocumentProxy.insertText(candidate)
         }
-        textDocumentProxy.insertText(candidate)
         clearCandidateTracking()
     }
 
     private func replaceRenderedComposition(with text: String) {
-        if !renderedComposition.isEmpty {
-            textDocumentProxy.deleteBackward()
-            renderedComposition = ""
-        }
-        if !text.isEmpty {
-            textDocumentProxy.insertText(text)
+        mutateDocument {
+            if !renderedComposition.isEmpty {
+                textDocumentProxy.deleteBackward()
+                renderedComposition = ""
+            }
+            if !text.isEmpty {
+                textDocumentProxy.insertText(text)
+            }
         }
     }
 
@@ -502,6 +519,20 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         replaceRenderedComposition(with: composer.flush())
+    }
+
+    private func mutateDocument(_ mutation: () -> Void) {
+        isMutatingDocument = true
+        defer { isMutatingDocument = false }
+        mutation()
+    }
+
+    private func discardPendingStateForExternalDocumentChange() {
+        guard !isMutatingDocument else { return }
+        guard !renderedComposition.isEmpty || !displayedCandidates.isEmpty else { return }
+        composer.reset()
+        renderedComposition = ""
+        clearCandidateTracking()
     }
 
     private func clearCandidateTracking() {
