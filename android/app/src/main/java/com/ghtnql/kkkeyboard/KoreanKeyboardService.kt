@@ -1,6 +1,7 @@
 package com.ghtnql.kkkeyboard
 
 import android.inputmethodservice.InputMethodService
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -9,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.LinearLayout
 
@@ -231,7 +233,7 @@ class KoreanKeyboardService : InputMethodService() {
             toggleCandidateMode()
         }.also { modeButton = it })
         addView(createActionButton("NEXT", 0.9f) {
-            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextInputMethod(false) }
+            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextKeyboard() }
         })
         addView(createActionButton("Space", 1.8f) {
             currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); c.commitText(" ", 1) }
@@ -244,7 +246,7 @@ class KoreanKeyboardService : InputMethodService() {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
         addView(createActionButton("NEXT", 1f) {
-            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextInputMethod(false) }
+            currentInputConnection?.let { c -> commitPending(c); clearCandidateTracking(); switchToNextKeyboard() }
         })
         addView(createActionButton("Enter", 1.3f) { currentInputConnection?.let(::handleEnter) })
         addView(createBackspaceButton())
@@ -350,6 +352,16 @@ class KoreanKeyboardService : InputMethodService() {
         commitPending(connection)
         clearCandidateTracking()
         sendDownUpKeyEvents(keyCode)
+    }
+
+    private fun switchToNextKeyboard() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            switchToNextInputMethod(false)
+            return
+        }
+        val token = window.window?.attributes?.token ?: return
+        val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.switchToNextInputMethod(token, false)
     }
 
     private fun refreshCandidates(force: Boolean = false) {
