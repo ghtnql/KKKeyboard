@@ -2,12 +2,13 @@ package com.ghtnql.kkkeyboard
 
 import android.text.InputType
 
-enum class InputFieldMode {
-    TEXT,
-    EMAIL,
-    URI,
-    NUMBER,
-    PHONE,
+enum class InputFieldMode(val allowsCandidates: Boolean) {
+    TEXT(true),
+    EMAIL(true),
+    URI(true),
+    NUMBER(false),
+    PHONE(false),
+    PASSWORD(false),
 }
 
 object InputFieldModeResolver {
@@ -20,6 +21,11 @@ object InputFieldModeResolver {
                 InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> InputFieldMode.EMAIL
 
                 InputType.TYPE_TEXT_VARIATION_URI -> InputFieldMode.URI
+
+                InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> InputFieldMode.PASSWORD
+
                 else -> InputFieldMode.TEXT
             }
             else -> InputFieldMode.TEXT
