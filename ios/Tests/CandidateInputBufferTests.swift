@@ -59,4 +59,12 @@ final class CandidateInputBufferTests: XCTestCase {
         buffer.apply(HangulEdit(commit: " "))
         XCTAssertEqual(buffer.currentForLookup(composing: "마", maxLength: 1), "마")
     }
+
+    func testEmptyCompositionDiscardsCommittedCandidatePrefix() {
+        let buffer = CandidateInputBuffer()
+        buffer.apply(HangulEdit(commit: "아"))
+
+        XCTAssertNil(buffer.currentForLookup(composing: "", maxLength: 8))
+        XCTAssertEqual(buffer.current(composing: "리가토"), "리가토")
+    }
 }
