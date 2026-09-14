@@ -162,7 +162,7 @@ class KoreanKeyboardService : InputMethodService() {
         when (mode) {
             InputFieldMode.NUMBER -> renderNumberKeyboard(root)
             InputFieldMode.PHONE -> renderPhoneKeyboard(root)
-            InputFieldMode.EMAIL, InputFieldMode.URI, InputFieldMode.TEXT -> renderTextKeyboard(root, mode)
+            InputFieldMode.EMAIL, InputFieldMode.URI, InputFieldMode.TEXT, InputFieldMode.PASSWORD -> renderTextKeyboard(root, mode)
         }
     }
 
@@ -348,7 +348,7 @@ class KoreanKeyboardService : InputMethodService() {
         val connection = currentInputConnection ?: return
         val ch = TwoBeolsikLayout.labelFor(baseLabel, shiftEnabled).singleOrNull() ?: return
         val edit = composer.input(ch)
-        candidateInput.apply(edit)
+        if (activeFieldMode.allowsCandidates) candidateInput.apply(edit)
         applyEdit(connection, edit)
         refreshCandidates()
         if (shiftEnabled) setShift(false)
@@ -391,6 +391,13 @@ class KoreanKeyboardService : InputMethodService() {
 
     private fun refreshCandidates(force: Boolean = false) {
         val row = candidateRow ?: return
+        if (!activeFieldMode.allowsCandidates) {
+            if (displayedCandidates.isNotEmpty() || row.visibility != View.GONE) {
+                displayedCandidates = emptyList()
+                hideCandidateButtons()
+            }
+            return
+        }
         val candidates = if (japaneseCandidateMode) {
             candidateInput.currentForLookup(
                 composer.currentText(),
@@ -417,6 +424,7 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun selectCandidate(candidate: String) {
+        if (!activeFieldMode.allowsCandidates) return
         val connection = currentInputConnection ?: return
         val source = candidateInput.current(composer.currentText())
         if (source.isEmpty()) return
@@ -462,7 +470,7 @@ class KoreanKeyboardService : InputMethodService() {
         val edit = composer.backspace()
         if (!edit.consumed) {
             connection.deleteSurroundingTextInCodePoints(1, 0)
-            candidateInput.removeCommittedCodePoint()
+            if (activeFieldMode.allowsCandidates) candidateInput.removeCommittedCodePoint()
             refreshCandidates()
             return
         }
