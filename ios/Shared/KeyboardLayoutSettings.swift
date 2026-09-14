@@ -8,6 +8,7 @@ enum KeyboardOrientation: String, CaseIterable {
 struct KeyboardLayoutProfile: Equatable {
     let height: Int
     let numberRowEnabled: Bool
+    let cursorRowEnabled: Bool
 }
 
 struct KeyboardLayoutSettings {
@@ -29,7 +30,16 @@ struct KeyboardLayoutSettings {
             ? false
             : defaults.bool(forKey: numberKey)
 
-        return KeyboardLayoutProfile(height: height, numberRowEnabled: numberRowEnabled)
+        let cursorKey = cursorRowKey(for: orientation)
+        let cursorRowEnabled = defaults.object(forKey: cursorKey) == nil
+            ? false
+            : defaults.bool(forKey: cursorKey)
+
+        return KeyboardLayoutProfile(
+            height: height,
+            numberRowEnabled: numberRowEnabled,
+            cursorRowEnabled: cursorRowEnabled
+        )
     }
 
     func setHeight(_ height: Int, for orientation: KeyboardOrientation) {
@@ -39,6 +49,10 @@ struct KeyboardLayoutSettings {
 
     func setNumberRowEnabled(_ enabled: Bool, for orientation: KeyboardOrientation) {
         defaults.set(enabled, forKey: numberRowKey(for: orientation))
+    }
+
+    func setCursorRowEnabled(_ enabled: Bool, for orientation: KeyboardOrientation) {
+        defaults.set(enabled, forKey: cursorRowKey(for: orientation))
     }
 
     func nextHeight(after current: Int) -> Int {
@@ -57,5 +71,9 @@ struct KeyboardLayoutSettings {
 
     private func numberRowKey(for orientation: KeyboardOrientation) -> String {
         "layout.\(orientation.rawValue).numberRow"
+    }
+
+    private func cursorRowKey(for orientation: KeyboardOrientation) -> String {
+        "layout.\(orientation.rawValue).cursorRow"
     }
 }
