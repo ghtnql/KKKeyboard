@@ -54,11 +54,17 @@ final class ViewController: UIViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.alwaysBounceVertical = false
         scrollView.keyboardDismissMode = .interactive
-        view.addSubview(scrollView)
-        scrollView.addSubview(stack)
 
-        let centeredWhenPossible = stack.centerYAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerYAnchor)
-        centeredWhenPossible.priority = .defaultLow
+        // A content container closes the scroll view's vertical constraint chain.
+        // Its minimum viewport height keeps short onboarding content centered,
+        // while the stack's intrinsic height expands it and enables scrolling
+        // for landscape or large Dynamic Type sizes.
+        let contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(stack)
 
         NSLayoutConstraint.activate([
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -66,12 +72,18 @@ final class ViewController: UIViewController {
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
 
-            stack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -24),
-            stack.topAnchor.constraint(greaterThanOrEqualTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
-            stack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -48),
-            centeredWhenPossible,
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            contentView.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor),
+
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 24),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -24),
+            stack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             testField.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
         ])
     }
