@@ -5,8 +5,14 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
         let defaults = isolatedDefaults()
         let settings = KeyboardLayoutSettings(defaults: defaults)
 
-        XCTAssertEqual(settings.profile(for: .portrait), KeyboardLayoutProfile(height: 260, numberRowEnabled: false))
-        XCTAssertEqual(settings.profile(for: .landscape), KeyboardLayoutProfile(height: 260, numberRowEnabled: false))
+        XCTAssertEqual(
+            settings.profile(for: .portrait),
+            KeyboardLayoutProfile(height: 260, numberRowEnabled: false, cursorRowEnabled: false)
+        )
+        XCTAssertEqual(
+            settings.profile(for: .landscape),
+            KeyboardLayoutProfile(height: 260, numberRowEnabled: false, cursorRowEnabled: false)
+        )
     }
 
     func testPortraitAndLandscapeProfilesAreIndependent() {
@@ -15,11 +21,19 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
 
         settings.setHeight(300, for: .portrait)
         settings.setNumberRowEnabled(true, for: .portrait)
+        settings.setCursorRowEnabled(true, for: .portrait)
         settings.setHeight(220, for: .landscape)
         settings.setNumberRowEnabled(false, for: .landscape)
+        settings.setCursorRowEnabled(false, for: .landscape)
 
-        XCTAssertEqual(settings.profile(for: .portrait), KeyboardLayoutProfile(height: 300, numberRowEnabled: true))
-        XCTAssertEqual(settings.profile(for: .landscape), KeyboardLayoutProfile(height: 220, numberRowEnabled: false))
+        XCTAssertEqual(
+            settings.profile(for: .portrait),
+            KeyboardLayoutProfile(height: 300, numberRowEnabled: true, cursorRowEnabled: true)
+        )
+        XCTAssertEqual(
+            settings.profile(for: .landscape),
+            KeyboardLayoutProfile(height: 220, numberRowEnabled: false, cursorRowEnabled: false)
+        )
     }
 
     func testUnsupportedHeightIsIgnoredAndHeightCycleWraps() {
