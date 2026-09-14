@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ㅋㅋ키보드</string>
+    <string name="onboarding_title">ㅋㅋ키보드</string>
+    <string name="onboarding_instructions">1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 세로/가로 각각 키 높이와 숫자열·커서열을 설정할 수 있습니다.</string>
+    <string name="orientation_portrait">세로</string>
+    <string name="orientation_landscape">가로</string>
+    <string name="layout_section_format">%1$s 레이아웃</string>
+    <string name="height_status_format">키 높이: %1$s (%2$ddp)</string>
+    <string name="height_compact">작게</string>
+    <string name="height_normal">기본</string>
+    <string name="height_tall">크게</string>
+    <string name="height_name_compact">compact</string>
+    <string name="height_name_normal">normal</string>
+    <string name="height_name_tall">tall</string>
+    <string name="number_row_status_format">보조 숫자열: %1$s</string>
+    <string name="cursor_row_status_format">보조 커서열: %1$s</string>
+    <string name="state_on">켜짐</string>
+    <string name="state_off">꺼짐</string>
+    <string name="number_row_enable">숫자열 켜기</string>
+    <string name="number_row_disable">숫자열 끄기</string>
+    <string name="cursor_row_enable">커서열 켜기</string>
+    <string name="cursor_row_disable">커서열 끄기</string>
+    <string name="open_keyboard_settings">키보드 활성화 설정 열기</string>
+    <string name="select_keyboard">키보드 선택</string>
+</resources>
