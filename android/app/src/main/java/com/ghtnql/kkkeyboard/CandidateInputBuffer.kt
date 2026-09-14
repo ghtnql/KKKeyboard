@@ -18,6 +18,8 @@ class CandidateInputBuffer {
         if (token.isNotEmpty()) token.deleteCharAt(token.lastIndex)
     }
 
+    fun hasCommittedToken(): Boolean = token.isNotEmpty()
+
     fun current(composing: String): String {
         if (composing.isEmpty()) return token.toString()
         return buildString(token.length + composing.length) {
