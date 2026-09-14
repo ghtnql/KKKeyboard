@@ -46,6 +46,50 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Select unit-test destination
+        id: test-destination
+        working-directory: ios
+        run: |
+          set -euo pipefail
+
+          simulator_udid="$({
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime_devices in data.get("devices", {}).values():
+              for device in runtime_devices:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit
+          '
+          } || true)"
+
+          if [[ -n "$simulator_udid" ]]; then
+            destination="id=$simulator_udid"
+            echo "Using available iPhone simulator: $destination"
+          else
+            mac_destination_id="$({
+              xcodebuild \
+                -project KKKeyboard.xcodeproj \
+                -scheme KKKeyboard \
+                -showdestinations 2>/dev/null \
+                | sed -n 's/.*platform:macOS.*id:\([^,}]*\).*/\1/p' \
+                | head -n 1 \
+                | xargs
+            } || true)"
+
+            if [[ -z "$mac_destination_id" ]]; then
+              echo "No runnable iPhone simulator or Designed-for-iPhone/iPad Mac destination is available." >&2
+              xcodebuild -project KKKeyboard.xcodeproj -scheme KKKeyboard -showdestinations >&2
+              exit 1
+            fi
+
+            destination="id=$mac_destination_id"
+            echo "No iPhone simulator is installed; using Xcode-provided Mac destination: $destination"
+          fi
+
+          echo "destination=$destination" >> "$GITHUB_OUTPUT"
+
       - name: Run unit tests
         working-directory: ios
         run: |
@@ -55,8 +99,7 @@ jobs:
             -project KKKeyboard.xcodeproj \
             -scheme KKKeyboard \
             -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -destination '${{ steps.test-destination.outputs.destination }}' \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             test 2>&1 | tee xcodebuild-test.log
