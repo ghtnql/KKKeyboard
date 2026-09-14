@@ -107,7 +107,8 @@ final class KeyboardViewController: UIInputViewController {
         candidateRow.axis = .horizontal
         candidateRow.spacing = 4
         candidateRow.distribution = .fillEqually
-        candidateRow.isHidden = true
+        candidateRow.alpha = 0
+        candidateRow.isUserInteractionEnabled = false
 
         candidateButtons = (0..<3).map { _ in
             let button = makeButton(title: "", action: #selector(handleCandidate(_:)))
@@ -484,7 +485,9 @@ final class KeyboardViewController: UIInputViewController {
                 button.isHidden = true
             }
         }
-        candidateRow.isHidden = candidates.isEmpty
+        let hasCandidates = !candidates.isEmpty
+        candidateRow.alpha = hasCandidates ? 1 : 0
+        candidateRow.isUserInteractionEnabled = hasCandidates
     }
 
     private func selectCandidate(_ candidate: String) {
@@ -542,6 +545,7 @@ final class KeyboardViewController: UIInputViewController {
             button.setTitle("", for: .normal)
             button.isHidden = true
         }
-        candidateRow.isHidden = true
+        candidateRow.alpha = 0
+        candidateRow.isUserInteractionEnabled = false
     }
 }
