@@ -30,6 +30,7 @@ class KoreanKeyboardService : InputMethodService() {
     private var layoutOrientation = KeyboardOrientation.PORTRAIT
     private var keyHeightDp = KeyboardHeight.NORMAL.keyHeightDp
     private var numberRowEnabled = false
+    private var cursorRowEnabled = false
 
     private val deleteRepeat = object : Runnable {
         override fun run() {
@@ -44,6 +45,7 @@ class KoreanKeyboardService : InputMethodService() {
         layoutOrientation = currentKeyboardOrientation()
         keyHeightDp = KeyboardLayoutSettings.readHeight(this, layoutOrientation).keyHeightDp
         numberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, layoutOrientation)
+        cursorRowEnabled = KeyboardLayoutSettings.readCursorRowEnabled(this, layoutOrientation)
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
@@ -70,15 +72,18 @@ class KoreanKeyboardService : InputMethodService() {
         val heightChanged = nextHeightDp != keyHeightDp
         val nextNumberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, nextOrientation)
         val numberRowChanged = nextNumberRowEnabled != numberRowEnabled
+        val nextCursorRowEnabled = KeyboardLayoutSettings.readCursorRowEnabled(this, nextOrientation)
+        val cursorRowChanged = nextCursorRowEnabled != cursorRowEnabled
         activeFieldMode = nextMode
         layoutOrientation = nextOrientation
         keyHeightDp = nextHeightDp
         numberRowEnabled = nextNumberRowEnabled
+        cursorRowEnabled = nextCursorRowEnabled
 
         if (!restarting) resetInputState()
 
         keyboardRoot?.let { root ->
-            if (!restarting || modeChanged || orientationChanged || heightChanged || numberRowChanged) {
+            if (!restarting || modeChanged || orientationChanged || heightChanged || numberRowChanged || cursorRowChanged) {
                 renderKeyboard(root, nextMode)
             }
         }
@@ -139,6 +144,7 @@ class KoreanKeyboardService : InputMethodService() {
         if (numberRowEnabled) root.addView(createLiteralRow(TwoBeolsikLayout.auxiliaryNumberRow))
         TwoBeolsikLayout.characterRows.forEach { root.addView(createCharacterRow(it)) }
         root.addView(createBottomCharacterRow())
+        if (cursorRowEnabled) root.addView(createCursorRow())
 
         when (mode) {
             InputFieldMode.EMAIL -> root.addView(createLiteralRow(listOf("@", ".", "-", "_")))
@@ -207,6 +213,13 @@ class KoreanKeyboardService : InputMethodService() {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
         labels.forEach { label -> addView(createLiteralButton(label)) }
+    }
+
+    private fun createCursorRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER
+        addView(createActionButton("◀", 1f) { moveCursor(KeyEvent.KEYCODE_DPAD_LEFT) })
+        addView(createActionButton("▶", 1f) { moveCursor(KeyEvent.KEYCODE_DPAD_RIGHT) })
     }
 
     private fun createActionRow() = LinearLayout(this).apply {
@@ -328,6 +341,13 @@ class KoreanKeyboardService : InputMethodService() {
         clearCandidateTracking()
         japaneseCandidateMode = !japaneseCandidateMode
         modeButton?.text = if (japaneseCandidateMode) "日" else "한"
+    }
+
+    private fun moveCursor(keyCode: Int) {
+        val connection = currentInputConnection ?: return
+        commitPending(connection)
+        clearCandidateTracking()
+        sendDownUpKeyEvents(keyCode)
     }
 
     private fun refreshCandidates(force: Boolean = false) {
