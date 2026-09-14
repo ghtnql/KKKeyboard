@@ -91,6 +91,31 @@ class KoreanKeyboardService : InputMethodService() {
         }
     }
 
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int,
+    ) {
+        super.onUpdateSelection(
+            oldSelStart,
+            oldSelEnd,
+            newSelStart,
+            newSelEnd,
+            candidatesStart,
+            candidatesEnd,
+        )
+
+        if (composer.currentText().isEmpty()) return
+        if (newSelStart == candidatesEnd && newSelEnd == candidatesEnd) return
+
+        composer.reset()
+        clearCandidateTracking()
+        currentInputConnection?.finishComposingText()
+    }
+
     override fun onFinishInputView(finishingInput: Boolean) {
         stopDeleteRepeat()
         super.onFinishInputView(finishingInput)
@@ -119,7 +144,7 @@ class KoreanKeyboardService : InputMethodService() {
     private fun resetInputState() {
         composer.reset()
         candidateInput.clear()
-        shiftEnabled = false
+        setShift(false)
         displayedCandidates = emptyList()
         hideCandidateButtons()
     }
