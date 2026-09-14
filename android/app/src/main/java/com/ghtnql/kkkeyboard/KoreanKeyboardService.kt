@@ -208,14 +208,14 @@ class KoreanKeyboardService : InputMethodService() {
     private fun createCandidateRow() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
-        visibility = View.GONE
+        visibility = if (activeFieldMode.allowsCandidates) View.INVISIBLE else View.GONE
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT,
         )
         repeat(3) {
             val button = createActionButton("", 1f) {}
-            button.visibility = View.GONE
+            button.visibility = View.INVISIBLE
             button.setOnClickListener { view ->
                 val candidate = (view as Button).text.toString()
                 if (candidate.isNotEmpty()) selectCandidate(candidate)
@@ -414,13 +414,13 @@ class KoreanKeyboardService : InputMethodService() {
             val candidate = candidates.getOrNull(index)
             if (candidate == null) {
                 button.text = ""
-                button.visibility = View.GONE
+                button.visibility = View.INVISIBLE
             } else {
                 button.text = candidate
                 button.visibility = View.VISIBLE
             }
         }
-        row.visibility = if (candidates.isEmpty()) View.GONE else View.VISIBLE
+        row.visibility = if (candidates.isEmpty()) View.INVISIBLE else View.VISIBLE
     }
 
     private fun selectCandidate(candidate: String) {
@@ -444,9 +444,9 @@ class KoreanKeyboardService : InputMethodService() {
     private fun hideCandidateButtons() {
         candidateButtons.forEach { button ->
             button.text = ""
-            button.visibility = View.GONE
+            button.visibility = View.INVISIBLE
         }
-        candidateRow?.visibility = View.GONE
+        candidateRow?.visibility = if (activeFieldMode.allowsCandidates) View.INVISIBLE else View.GONE
     }
 
     private fun handleEnter(connection: InputConnection) {
