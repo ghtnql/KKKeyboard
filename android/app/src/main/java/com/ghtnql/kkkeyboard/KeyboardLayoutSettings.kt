@@ -40,6 +40,7 @@ object KeyboardLayoutSettings {
 
     private fun heightKey(orientation: KeyboardOrientation) = "height_${orientation.preferenceSuffix}"
     private fun numberRowKey(orientation: KeyboardOrientation) = "number_row_${orientation.preferenceSuffix}"
+    private fun cursorRowKey(orientation: KeyboardOrientation) = "cursor_row_${orientation.preferenceSuffix}"
 
     fun readHeight(context: Context, orientation: KeyboardOrientation): KeyboardHeight {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -70,6 +71,17 @@ object KeyboardLayoutSettings {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(numberRowKey(orientation), enabled)
+            .apply()
+    }
+
+    fun readCursorRowEnabled(context: Context, orientation: KeyboardOrientation): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(cursorRowKey(orientation), false)
+
+    fun writeCursorRowEnabled(context: Context, orientation: KeyboardOrientation, enabled: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(cursorRowKey(orientation), enabled)
             .apply()
     }
 }
