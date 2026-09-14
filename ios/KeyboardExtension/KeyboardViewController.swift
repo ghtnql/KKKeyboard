@@ -19,6 +19,7 @@ final class KeyboardViewController: UIInputViewController {
     private let keyboardStack = UIStackView()
     private let candidateRow = UIStackView()
     private let numberRow = UIStackView()
+    private let cursorRow = UIStackView()
     private let settingsRow = UIStackView()
     private var modeButton: UIButton?
     private var shiftButton: UIButton?
@@ -26,6 +27,7 @@ final class KeyboardViewController: UIInputViewController {
     private var orientationButton: UIButton?
     private var heightButton: UIButton?
     private var numberRowButton: UIButton?
+    private var cursorRowButton: UIButton?
     private var keyboardHeightConstraint: NSLayoutConstraint?
 
     private var hangulLabels: [String] {
@@ -69,6 +71,8 @@ final class KeyboardViewController: UIInputViewController {
         keyboardStack.addArrangedSubview(candidateRow)
         configureNumberRow()
         keyboardStack.addArrangedSubview(numberRow)
+        configureCursorRow()
+        keyboardStack.addArrangedSubview(cursorRow)
         TwoBeolsikLayout.characterRows.forEach(addCharacterRow)
         addBottomCharacterRow()
         addControlRow()
@@ -112,6 +116,21 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    private func configureCursorRow() {
+        cursorRow.axis = .horizontal
+        cursorRow.spacing = 4
+        cursorRow.distribution = .fillEqually
+        cursorRow.isHidden = true
+
+        let left = makeButton(title: "◀", action: #selector(handleCursorLeft))
+        left.accessibilityLabel = "커서 왼쪽"
+        cursorRow.addArrangedSubview(left)
+
+        let right = makeButton(title: "▶", action: #selector(handleCursorRight))
+        right.accessibilityLabel = "커서 오른쪽"
+        cursorRow.addArrangedSubview(right)
+    }
+
     private func configureSettingsRow() {
         settingsRow.axis = .horizontal
         settingsRow.spacing = 4
@@ -130,6 +149,10 @@ final class KeyboardViewController: UIInputViewController {
         let numbers = makeButton(title: "숫자열", action: #selector(handleNumberRowToggle))
         numberRowButton = numbers
         settingsRow.addArrangedSubview(numbers)
+
+        let cursors = makeButton(title: "커서열", action: #selector(handleCursorRowToggle))
+        cursorRowButton = cursors
+        settingsRow.addArrangedSubview(cursors)
 
         settingsRow.addArrangedSubview(makeButton(title: "닫기", action: #selector(handleSettingsToggle)))
     }
@@ -279,6 +302,25 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    @objc private func handleCursorRowToggle() {
+        let target = settingsTargetOrientation
+        let profile = layoutSettings.profile(for: target)
+        layoutSettings.setCursorRowEnabled(!profile.cursorRowEnabled, for: target)
+        if target == layoutOrientation {
+            applyLayoutProfile(for: layoutOrientation)
+        } else {
+            refreshSettingsControls()
+        }
+    }
+
+    @objc private func handleCursorLeft() {
+        moveCursor(by: -1)
+    }
+
+    @objc private func handleCursorRight() {
+        moveCursor(by: 1)
+    }
+
     @objc private func handleSpace() {
         commitPendingComposition()
         clearCandidateTracking()
@@ -332,6 +374,7 @@ final class KeyboardViewController: UIInputViewController {
         let profile = layoutSettings.profile(for: orientation)
         keyboardHeightConstraint?.constant = CGFloat(profile.height)
         numberRow.isHidden = !profile.numberRowEnabled
+        cursorRow.isHidden = !profile.cursorRowEnabled
 
         if !settingsVisible {
             settingsTargetOrientation = orientation
@@ -346,6 +389,13 @@ final class KeyboardViewController: UIInputViewController {
         orientationButton?.accessibilityValue = settingsTargetOrientation == .portrait ? "세로" : "가로"
         heightButton?.setTitle("높이 \(profile.height)", for: .normal)
         numberRowButton?.setTitle(profile.numberRowEnabled ? "숫자열 켬" : "숫자열 끔", for: .normal)
+        cursorRowButton?.setTitle(profile.cursorRowEnabled ? "커서열 켬" : "커서열 끔", for: .normal)
+    }
+
+    private func moveCursor(by offset: Int) {
+        commitPendingComposition()
+        clearCandidateTracking()
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
     }
 
     private func setShift(_ enabled: Bool) {
