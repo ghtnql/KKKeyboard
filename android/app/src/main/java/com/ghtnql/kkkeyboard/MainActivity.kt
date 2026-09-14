@@ -23,28 +23,28 @@ class MainActivity : Activity() {
         }
 
         content.addView(TextView(this).apply {
-            text = "ㅋㅋ키보드"
+            text = getString(R.string.onboarding_title)
             textSize = 30f
         })
 
         content.addView(TextView(this).apply {
-            text = "1. 키보드를 활성화합니다.\n2. 입력창에서 ㅋㅋ키보드를 선택합니다.\n3. 세로/가로 각각 키 높이와 숫자열·커서열을 설정할 수 있습니다."
+            text = getString(R.string.onboarding_instructions)
             textSize = 17f
             setPadding(0, 36, 0, 24)
         })
 
-        addLayoutControls(content, KeyboardOrientation.PORTRAIT, "세로")
-        addLayoutControls(content, KeyboardOrientation.LANDSCAPE, "가로")
+        addLayoutControls(content, KeyboardOrientation.PORTRAIT, getString(R.string.orientation_portrait))
+        addLayoutControls(content, KeyboardOrientation.LANDSCAPE, getString(R.string.orientation_landscape))
 
         content.addView(Button(this).apply {
-            text = "키보드 활성화 설정 열기"
+            text = getString(R.string.open_keyboard_settings)
             setOnClickListener {
                 startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
             }
         })
 
         content.addView(Button(this).apply {
-            text = "키보드 선택"
+            text = getString(R.string.select_keyboard)
             setOnClickListener {
                 getSystemService(InputMethodManager::class.java)?.showInputMethodPicker()
             }
@@ -69,15 +69,24 @@ class MainActivity : Activity() {
         orientationLabel: String,
     ) {
         root.addView(TextView(this).apply {
-            text = "$orientationLabel 레이아웃"
+            text = getString(R.string.layout_section_format, orientationLabel)
             textSize = 19f
             setPadding(0, 18, 0, 8)
         })
 
         val heightStatus = TextView(this).apply { textSize = 16f }
+        fun heightLabel(height: KeyboardHeight): String = when (height) {
+            KeyboardHeight.COMPACT -> getString(R.string.height_name_compact)
+            KeyboardHeight.NORMAL -> getString(R.string.height_name_normal)
+            KeyboardHeight.TALL -> getString(R.string.height_name_tall)
+        }
         fun refreshHeightStatus() {
             val height = KeyboardLayoutSettings.readHeight(this, orientation)
-            heightStatus.text = "키 높이: ${height.name.lowercase()} (${height.keyHeightDp}dp)"
+            heightStatus.text = getString(
+                R.string.height_status_format,
+                heightLabel(height),
+                height.keyHeightDp,
+            )
         }
         refreshHeightStatus()
         root.addView(heightStatus)
@@ -87,12 +96,12 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
         listOf(
-            "작게" to KeyboardHeight.COMPACT,
-            "기본" to KeyboardHeight.NORMAL,
-            "크게" to KeyboardHeight.TALL,
-        ).forEach { (label, height) ->
+            R.string.height_compact to KeyboardHeight.COMPACT,
+            R.string.height_normal to KeyboardHeight.NORMAL,
+            R.string.height_tall to KeyboardHeight.TALL,
+        ).forEach { (labelRes, height) ->
             heightRow.addView(Button(this).apply {
-                text = label
+                text = getString(labelRes)
                 isAllCaps = false
                 setOnClickListener {
                     KeyboardLayoutSettings.writeHeight(this@MainActivity, orientation, height)
@@ -109,8 +118,13 @@ class MainActivity : Activity() {
         val numberRowToggle = Button(this).apply { isAllCaps = false }
         fun refreshNumberRowStatus() {
             val enabled = KeyboardLayoutSettings.readNumberRowEnabled(this, orientation)
-            numberRowStatus.text = "보조 숫자열: ${if (enabled) "켜짐" else "꺼짐"}"
-            numberRowToggle.text = if (enabled) "숫자열 끄기" else "숫자열 켜기"
+            numberRowStatus.text = getString(
+                R.string.number_row_status_format,
+                getString(if (enabled) R.string.state_on else R.string.state_off),
+            )
+            numberRowToggle.text = getString(
+                if (enabled) R.string.number_row_disable else R.string.number_row_enable,
+            )
         }
         numberRowToggle.setOnClickListener {
             val enabled = KeyboardLayoutSettings.readNumberRowEnabled(this@MainActivity, orientation)
@@ -128,8 +142,13 @@ class MainActivity : Activity() {
         val cursorRowToggle = Button(this).apply { isAllCaps = false }
         fun refreshCursorRowStatus() {
             val enabled = KeyboardLayoutSettings.readCursorRowEnabled(this, orientation)
-            cursorRowStatus.text = "보조 커서열: ${if (enabled) "켜짐" else "꺼짐"}"
-            cursorRowToggle.text = if (enabled) "커서열 끄기" else "커서열 켜기"
+            cursorRowStatus.text = getString(
+                R.string.cursor_row_status_format,
+                getString(if (enabled) R.string.state_on else R.string.state_off),
+            )
+            cursorRowToggle.text = getString(
+                if (enabled) R.string.cursor_row_disable else R.string.cursor_row_enable,
+            )
         }
         cursorRowToggle.setOnClickListener {
             val enabled = KeyboardLayoutSettings.readCursorRowEnabled(this@MainActivity, orientation)
