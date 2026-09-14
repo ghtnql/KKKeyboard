@@ -469,9 +469,10 @@ class KoreanKeyboardService : InputMethodService() {
         if (edit.composing.isNullOrEmpty()) {
             connection.setComposingText("", 1)
             connection.finishComposingText()
-        } else {
-            connection.setComposingText(edit.composing, 1)
+            if (candidateInput.hasCommittedToken()) clearCandidateTracking()
+            return
         }
+        connection.setComposingText(edit.composing, 1)
         refreshCandidates()
     }
 
