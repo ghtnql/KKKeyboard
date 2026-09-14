@@ -32,7 +32,17 @@ final class CandidateInputBuffer {
 
     /// Avoid constructing a growing String on every key press once the current
     /// token is longer than any local candidate key can possibly match.
+    ///
+    /// A committed-only prefix is deliberately discarded when composition is
+    /// empty. That state can occur after backspacing the active syllable away;
+    /// retaining it across a later caret move makes candidate replacement delete
+    /// text that was not typed at the new caret. Clearing here keeps the safety
+    /// check O(1) and avoids querying document context on the input hot path.
     func currentForLookup(composing: String, maxLength: Int) -> String? {
+        guard !composing.isEmpty else {
+            clear()
+            return nil
+        }
         guard maxLength > 0, tokenCharacterCount + composing.count <= maxLength else { return nil }
         return current(composing: composing)
     }
