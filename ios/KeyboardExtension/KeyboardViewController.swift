@@ -11,6 +11,7 @@ final class KeyboardViewController: UIInputViewController {
     private var symbolPage = false
     private var settingsVisible = false
     private var layoutOrientation: KeyboardOrientation = .portrait
+    private var settingsTargetOrientation: KeyboardOrientation = .portrait
     private var shiftedCharacterButtons: [(button: UIButton, baseLabel: String)] = []
     private var characterButtons: [UIButton] = []
     private var candidateButtons: [UIButton] = []
@@ -22,6 +23,7 @@ final class KeyboardViewController: UIInputViewController {
     private var modeButton: UIButton?
     private var shiftButton: UIButton?
     private var pageButton: UIButton?
+    private var orientationButton: UIButton?
     private var heightButton: UIButton?
     private var numberRowButton: UIButton?
     private var keyboardHeightConstraint: NSLayoutConstraint?
@@ -115,6 +117,11 @@ final class KeyboardViewController: UIInputViewController {
         settingsRow.spacing = 4
         settingsRow.distribution = .fillEqually
         settingsRow.isHidden = true
+
+        let orientation = makeButton(title: "세로 설정", action: #selector(handleSettingsOrientationToggle))
+        orientation.accessibilityLabel = "설정할 화면 방향"
+        orientationButton = orientation
+        settingsRow.addArrangedSubview(orientation)
 
         let height = makeButton(title: "높이", action: #selector(handleHeightCycle))
         heightButton = height
@@ -238,19 +245,38 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func handleSettingsToggle() {
         settingsVisible.toggle()
         settingsRow.isHidden = !settingsVisible
+        if settingsVisible {
+            settingsTargetOrientation = layoutOrientation
+            refreshSettingsControls()
+        }
+    }
+
+    @objc private func handleSettingsOrientationToggle() {
+        settingsTargetOrientation = settingsTargetOrientation == .portrait ? .landscape : .portrait
+        refreshSettingsControls()
     }
 
     @objc private func handleHeightCycle() {
-        let profile = layoutSettings.profile(for: layoutOrientation)
+        let target = settingsTargetOrientation
+        let profile = layoutSettings.profile(for: target)
         let nextHeight = layoutSettings.nextHeight(after: profile.height)
-        layoutSettings.setHeight(nextHeight, for: layoutOrientation)
-        applyLayoutProfile(for: layoutOrientation)
+        layoutSettings.setHeight(nextHeight, for: target)
+        if target == layoutOrientation {
+            applyLayoutProfile(for: layoutOrientation)
+        } else {
+            refreshSettingsControls()
+        }
     }
 
     @objc private func handleNumberRowToggle() {
-        let profile = layoutSettings.profile(for: layoutOrientation)
-        layoutSettings.setNumberRowEnabled(!profile.numberRowEnabled, for: layoutOrientation)
-        applyLayoutProfile(for: layoutOrientation)
+        let target = settingsTargetOrientation
+        let profile = layoutSettings.profile(for: target)
+        layoutSettings.setNumberRowEnabled(!profile.numberRowEnabled, for: target)
+        if target == layoutOrientation {
+            applyLayoutProfile(for: layoutOrientation)
+        } else {
+            refreshSettingsControls()
+        }
     }
 
     @objc private func handleSpace() {
@@ -306,6 +332,18 @@ final class KeyboardViewController: UIInputViewController {
         let profile = layoutSettings.profile(for: orientation)
         keyboardHeightConstraint?.constant = CGFloat(profile.height)
         numberRow.isHidden = !profile.numberRowEnabled
+
+        if !settingsVisible {
+            settingsTargetOrientation = orientation
+        }
+        refreshSettingsControls()
+    }
+
+    private func refreshSettingsControls() {
+        let profile = layoutSettings.profile(for: settingsTargetOrientation)
+        let orientationLabel = settingsTargetOrientation == .portrait ? "세로 설정" : "가로 설정"
+        orientationButton?.setTitle(orientationLabel, for: .normal)
+        orientationButton?.accessibilityValue = settingsTargetOrientation == .portrait ? "세로" : "가로"
         heightButton?.setTitle("높이 \(profile.height)", for: .normal)
         numberRowButton?.setTitle(profile.numberRowEnabled ? "숫자열 켬" : "숫자열 끔", for: .normal)
     }
