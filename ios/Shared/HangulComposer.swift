@@ -18,11 +18,14 @@ final class HangulComposer {
     private var finalIndex = -1
 
     func input(_ character: Character) -> HangulEdit {
-        if let index = Self.initials.firstIndex(of: character) {
-            return inputConsonant(character, newInitial: index)
+        let initialIndex = Self.initialIndex(of: character)
+        if initialIndex >= 0 {
+            return inputConsonant(character, newInitial: initialIndex)
         }
-        if let index = Self.vowels.firstIndex(of: character) {
-            return inputVowel(character, newMedial: index)
+
+        let medialIndex = Self.medialIndex(of: character)
+        if medialIndex >= 0 {
+            return inputVowel(character, newMedial: medialIndex)
         }
 
         let pending = flush()
@@ -32,17 +35,15 @@ final class HangulComposer {
     func backspace() -> HangulEdit {
         if finalIndex > 0 {
             let currentFinal = Self.finals[finalIndex]
-            if let split = Self.compoundFinalSplit[currentFinal],
-               let baseIndex = Self.finals.firstIndex(of: split.0) {
-                finalIndex = baseIndex
+            if let split = Self.compoundFinalSplit[currentFinal] {
+                finalIndex = Self.finalIndex(of: split.0)
             } else {
                 finalIndex = -1
             }
         } else if medial >= 0 {
             let currentMedial = Self.vowels[medial]
-            if let base = Self.compoundMedialBase[currentMedial],
-               let baseIndex = Self.vowels.firstIndex(of: base) {
-                medial = baseIndex
+            if let base = Self.compoundMedialBase[currentMedial] {
+                medial = Self.medialIndex(of: base)
             } else {
                 medial = -1
             }
@@ -100,18 +101,16 @@ final class HangulComposer {
             return HangulEdit(commit: commit, composing: currentText())
         }
 
-        if finalIndex < 0,
-           let candidateFinal = Self.finals.firstIndex(of: character),
-           candidateFinal > 0 {
-            finalIndex = candidateFinal
-            return HangulEdit(composing: currentText())
-        }
-
-        if finalIndex > 0 {
+        if finalIndex < 0 {
+            let candidateFinal = Self.finalIndex(of: character)
+            if candidateFinal > 0 {
+                finalIndex = candidateFinal
+                return HangulEdit(composing: currentText())
+            }
+        } else {
             let currentFinal = Self.finals[finalIndex]
-            if let compound = Self.compoundFinals[Pair(currentFinal, character)],
-               let compoundIndex = Self.finals.firstIndex(of: compound) {
-                finalIndex = compoundIndex
+            if let compound = Self.compoundFinal(currentFinal, character) {
+                finalIndex = Self.finalIndex(of: compound)
                 return HangulEdit(composing: currentText())
             }
         }
@@ -131,9 +130,8 @@ final class HangulComposer {
             }
 
             let current = Self.vowels[medial]
-            if let compound = Self.compoundMedials[Pair(current, character)],
-               let compoundIndex = Self.vowels.firstIndex(of: compound) {
-                medial = compoundIndex
+            if let compound = Self.compoundMedial(current, character) {
+                medial = Self.medialIndex(of: compound)
                 return HangulEdit(composing: currentText())
             }
 
@@ -150,9 +148,9 @@ final class HangulComposer {
         if finalIndex > 0 {
             let finalCharacter = Self.finals[finalIndex]
             if let split = Self.compoundFinalSplit[finalCharacter] {
-                finalIndex = Self.finals.firstIndex(of: split.0) ?? -1
+                finalIndex = Self.finalIndex(of: split.0)
                 let commit = currentText()
-                initial = Self.initials.firstIndex(of: split.1) ?? -1
+                initial = Self.initialIndex(of: split.1)
                 medial = newMedial
                 finalIndex = -1
                 return HangulEdit(commit: commit, composing: currentText())
@@ -160,15 +158,14 @@ final class HangulComposer {
 
             finalIndex = -1
             let commit = currentText()
-            initial = Self.initials.firstIndex(of: finalCharacter) ?? -1
+            initial = Self.initialIndex(of: finalCharacter)
             medial = newMedial
             return HangulEdit(commit: commit, composing: currentText())
         }
 
         let current = Self.vowels[medial]
-        if let compound = Self.compoundMedials[Pair(current, character)],
-           let compoundIndex = Self.vowels.firstIndex(of: compound) {
-            medial = compoundIndex
+        if let compound = Self.compoundMedial(current, character) {
+            medial = Self.medialIndex(of: compound)
             return HangulEdit(composing: currentText())
         }
 
@@ -177,16 +174,6 @@ final class HangulComposer {
         medial = newMedial
         finalIndex = -1
         return HangulEdit(commit: commit, composing: currentText())
-    }
-
-    private struct Pair: Hashable {
-        let first: Character
-        let second: Character
-
-        init(_ first: Character, _ second: Character) {
-            self.first = first
-            self.second = second
-        }
     }
 
     private static let hangulBase = 0xAC00
@@ -207,23 +194,148 @@ final class HangulComposer {
         "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
     ]
 
-    private static let compoundMedials: [Pair: Character] = [
-        Pair("ㅗ", "ㅏ"): "ㅘ", Pair("ㅗ", "ㅐ"): "ㅙ", Pair("ㅗ", "ㅣ"): "ㅚ",
-        Pair("ㅜ", "ㅓ"): "ㅝ", Pair("ㅜ", "ㅔ"): "ㅞ", Pair("ㅜ", "ㅣ"): "ㅟ",
-        Pair("ㅡ", "ㅣ"): "ㅢ"
-    ]
+    // O(1) hot-path lookup avoids scanning the full jamo arrays for every key press.
+    private static func initialIndex(of character: Character) -> Int {
+        switch character {
+        case "ㄱ": return 0
+        case "ㄲ": return 1
+        case "ㄴ": return 2
+        case "ㄷ": return 3
+        case "ㄸ": return 4
+        case "ㄹ": return 5
+        case "ㅁ": return 6
+        case "ㅂ": return 7
+        case "ㅃ": return 8
+        case "ㅅ": return 9
+        case "ㅆ": return 10
+        case "ㅇ": return 11
+        case "ㅈ": return 12
+        case "ㅉ": return 13
+        case "ㅊ": return 14
+        case "ㅋ": return 15
+        case "ㅌ": return 16
+        case "ㅍ": return 17
+        case "ㅎ": return 18
+        default: return -1
+        }
+    }
+
+    private static func medialIndex(of character: Character) -> Int {
+        switch character {
+        case "ㅏ": return 0
+        case "ㅐ": return 1
+        case "ㅑ": return 2
+        case "ㅒ": return 3
+        case "ㅓ": return 4
+        case "ㅔ": return 5
+        case "ㅕ": return 6
+        case "ㅖ": return 7
+        case "ㅗ": return 8
+        case "ㅘ": return 9
+        case "ㅙ": return 10
+        case "ㅚ": return 11
+        case "ㅛ": return 12
+        case "ㅜ": return 13
+        case "ㅝ": return 14
+        case "ㅞ": return 15
+        case "ㅟ": return 16
+        case "ㅠ": return 17
+        case "ㅡ": return 18
+        case "ㅢ": return 19
+        case "ㅣ": return 20
+        default: return -1
+        }
+    }
+
+    private static func finalIndex(of character: Character) -> Int {
+        switch character {
+        case "ㄱ": return 1
+        case "ㄲ": return 2
+        case "ㄳ": return 3
+        case "ㄴ": return 4
+        case "ㄵ": return 5
+        case "ㄶ": return 6
+        case "ㄷ": return 7
+        case "ㄹ": return 8
+        case "ㄺ": return 9
+        case "ㄻ": return 10
+        case "ㄼ": return 11
+        case "ㄽ": return 12
+        case "ㄾ": return 13
+        case "ㄿ": return 14
+        case "ㅀ": return 15
+        case "ㅁ": return 16
+        case "ㅂ": return 17
+        case "ㅄ": return 18
+        case "ㅅ": return 19
+        case "ㅆ": return 20
+        case "ㅇ": return 21
+        case "ㅈ": return 22
+        case "ㅊ": return 23
+        case "ㅋ": return 24
+        case "ㅌ": return 25
+        case "ㅍ": return 26
+        case "ㅎ": return 27
+        default: return -1
+        }
+    }
+
+    // Switch-based compound lookup avoids constructing/hash-looking-up Pair keys per input.
+    private static func compoundMedial(_ first: Character, _ second: Character) -> Character? {
+        switch first {
+        case "ㅗ":
+            switch second {
+            case "ㅏ": return "ㅘ"
+            case "ㅐ": return "ㅙ"
+            case "ㅣ": return "ㅚ"
+            default: return nil
+            }
+        case "ㅜ":
+            switch second {
+            case "ㅓ": return "ㅝ"
+            case "ㅔ": return "ㅞ"
+            case "ㅣ": return "ㅟ"
+            default: return nil
+            }
+        case "ㅡ":
+            return second == "ㅣ" ? "ㅢ" : nil
+        default:
+            return nil
+        }
+    }
 
     private static let compoundMedialBase: [Character: Character] = [
         "ㅘ": "ㅗ", "ㅙ": "ㅗ", "ㅚ": "ㅗ", "ㅝ": "ㅜ", "ㅞ": "ㅜ",
         "ㅟ": "ㅜ", "ㅢ": "ㅡ"
     ]
 
-    private static let compoundFinals: [Pair: Character] = [
-        Pair("ㄱ", "ㅅ"): "ㄳ", Pair("ㄴ", "ㅈ"): "ㄵ", Pair("ㄴ", "ㅎ"): "ㄶ",
-        Pair("ㄹ", "ㄱ"): "ㄺ", Pair("ㄹ", "ㅁ"): "ㄻ", Pair("ㄹ", "ㅂ"): "ㄼ",
-        Pair("ㄹ", "ㅅ"): "ㄽ", Pair("ㄹ", "ㅌ"): "ㄾ", Pair("ㄹ", "ㅍ"): "ㄿ",
-        Pair("ㄹ", "ㅎ"): "ㅀ", Pair("ㅂ", "ㅅ"): "ㅄ"
-    ]
+    private static func compoundFinal(_ first: Character, _ second: Character) -> Character? {
+        switch first {
+        case "ㄱ":
+            return second == "ㅅ" ? "ㄳ" : nil
+        case "ㄴ":
+            switch second {
+            case "ㅈ": return "ㄵ"
+            case "ㅎ": return "ㄶ"
+            default: return nil
+            }
+        case "ㄹ":
+            switch second {
+            case "ㄱ": return "ㄺ"
+            case "ㅁ": return "ㄻ"
+            case "ㅂ": return "ㄼ"
+            case "ㅅ": return "ㄽ"
+            case "ㅌ": return "ㄾ"
+            case "ㅍ": return "ㄿ"
+            case "ㅎ": return "ㅀ"
+            default: return nil
+            }
+        case "ㅂ":
+            return second == "ㅅ" ? "ㅄ" : nil
+        default:
+            return nil
+        }
+    }
 
     private static let compoundFinalSplit: [Character: (Character, Character)] = [
         "ㄳ": ("ㄱ", "ㅅ"), "ㄵ": ("ㄴ", "ㅈ"), "ㄶ": ("ㄴ", "ㅎ"),
