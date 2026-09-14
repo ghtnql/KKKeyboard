@@ -57,7 +57,7 @@ class KoreanKeyboardService : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         stopDeleteRepeat()
-        if (!restarting) resetInputState()
+        resetInputState()
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -162,6 +162,7 @@ class KoreanKeyboardService : InputMethodService() {
             listOf("7", "8", "9"),
         ).forEach { root.addView(createLiteralRow(it)) }
         root.addView(createLiteralRow(listOf("-", "0", ".")))
+        if (cursorRowEnabled) root.addView(createCursorRow())
         root.addView(createCompactActionRow())
     }
 
@@ -173,6 +174,7 @@ class KoreanKeyboardService : InputMethodService() {
             listOf("*", "0", "#"),
         ).forEach { root.addView(createLiteralRow(it)) }
         root.addView(createLiteralRow(listOf("+", "-", "(", ")")))
+        if (cursorRowEnabled) root.addView(createCursorRow())
         root.addView(createCompactActionRow())
     }
 
@@ -411,9 +413,18 @@ class KoreanKeyboardService : InputMethodService() {
     }
 
     private fun handleBackspace(connection: InputConnection) {
+        val selectedText = connection.getSelectedText(0)
+        if (!selectedText.isNullOrEmpty()) {
+            composer.reset()
+            clearCandidateTracking()
+            connection.finishComposingText()
+            connection.commitText("", 1)
+            return
+        }
+
         val edit = composer.backspace()
         if (!edit.consumed) {
-            connection.deleteSurroundingText(1, 0)
+            connection.deleteSurroundingTextInCodePoints(1, 0)
             candidateInput.removeCommittedCodePoint()
             refreshCandidates()
             return
