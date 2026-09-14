@@ -2,6 +2,8 @@ package com.ghtnql.kkkeyboard
 
 import android.text.InputType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InputFieldModeResolverTest {
@@ -37,6 +39,20 @@ class InputFieldModeResolverTest {
                 InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI,
             ),
         )
+    }
+
+    @Test
+    fun resolvesPasswordVariationsAndDisablesCandidates() {
+        listOf(
+            InputType.TYPE_TEXT_VARIATION_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+        ).forEach { variation ->
+            val mode = InputFieldModeResolver.fromInputType(InputType.TYPE_CLASS_TEXT or variation)
+            assertEquals(InputFieldMode.PASSWORD, mode)
+            assertFalse(mode.allowsCandidates)
+        }
+        assertTrue(InputFieldMode.TEXT.allowsCandidates)
     }
 
     @Test
