@@ -45,9 +45,7 @@ class KoreanKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
         layoutOrientation = currentKeyboardOrientation()
-        keyHeightDp = KeyboardLayoutSettings.readHeight(this, layoutOrientation).keyHeightDp
-        numberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, layoutOrientation)
-        cursorRowEnabled = KeyboardLayoutSettings.readCursorRowEnabled(this, layoutOrientation)
+        applyLayoutPlan(layoutPlan(activeFieldMode, layoutOrientation))
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(8))
@@ -70,17 +68,13 @@ class KoreanKeyboardService : InputMethodService() {
         val modeChanged = nextMode != activeFieldMode
         val nextOrientation = currentKeyboardOrientation()
         val orientationChanged = nextOrientation != layoutOrientation
-        val nextHeightDp = KeyboardLayoutSettings.readHeight(this, nextOrientation).keyHeightDp
-        val heightChanged = nextHeightDp != keyHeightDp
-        val nextNumberRowEnabled = KeyboardLayoutSettings.readNumberRowEnabled(this, nextOrientation)
-        val numberRowChanged = nextNumberRowEnabled != numberRowEnabled
-        val nextCursorRowEnabled = KeyboardLayoutSettings.readCursorRowEnabled(this, nextOrientation)
-        val cursorRowChanged = nextCursorRowEnabled != cursorRowEnabled
+        val nextPlan = layoutPlan(nextMode, nextOrientation)
+        val heightChanged = nextPlan.keyHeightDp != keyHeightDp
+        val numberRowChanged = nextPlan.numberRowEnabled != numberRowEnabled
+        val cursorRowChanged = nextPlan.cursorRowEnabled != cursorRowEnabled
         activeFieldMode = nextMode
         layoutOrientation = nextOrientation
-        keyHeightDp = nextHeightDp
-        numberRowEnabled = nextNumberRowEnabled
-        cursorRowEnabled = nextCursorRowEnabled
+        applyLayoutPlan(nextPlan)
 
         if (!restarting) resetInputState()
 
@@ -493,6 +487,41 @@ class KoreanKeyboardService : InputMethodService() {
         val pending = composer.flush()
         if (pending.isNotEmpty()) connection.commitText(pending, 1)
         else connection.finishComposingText()
+    }
+
+    private fun layoutPlan(mode: InputFieldMode, orientation: KeyboardOrientation): KeyboardRowPlan {
+        val requestedHeightDp = KeyboardLayoutSettings.readHeight(this, orientation).keyHeightDp
+        val requestedNumberRow = KeyboardLayoutSettings.readNumberRowEnabled(this, orientation)
+        val requestedCursorRow = KeyboardLayoutSettings.readCursorRowEnabled(this, orientation)
+        val configuredHeightDp = resources.configuration.screenHeightDp
+        val availableHeightDp = if (configuredHeightDp > 0) {
+            configuredHeightDp
+        } else {
+            (resources.displayMetrics.heightPixels / resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        }
+        return KeyboardRowSizing.plan(
+            requestedKeyHeightDp = requestedHeightDp,
+            availableHeightDp = availableHeightDp,
+            baseRowCount = baseRowCount(mode),
+            numberRowRequested = requestedNumberRow,
+            cursorRowRequested = requestedCursorRow,
+            supportsNumberRow = mode == InputFieldMode.TEXT || mode == InputFieldMode.EMAIL ||
+                mode == InputFieldMode.URI || mode == InputFieldMode.PASSWORD,
+        )
+    }
+
+    private fun baseRowCount(mode: InputFieldMode): Int = when (mode) {
+        InputFieldMode.NUMBER -> 5
+        InputFieldMode.PHONE -> 6
+        InputFieldMode.PASSWORD -> TwoBeolsikLayout.characterRows.size + 2
+        InputFieldMode.EMAIL, InputFieldMode.URI -> TwoBeolsikLayout.characterRows.size + 4
+        InputFieldMode.TEXT -> TwoBeolsikLayout.characterRows.size + 3
+    }
+
+    private fun applyLayoutPlan(plan: KeyboardRowPlan) {
+        keyHeightDp = plan.keyHeightDp
+        numberRowEnabled = plan.numberRowEnabled
+        cursorRowEnabled = plan.cursorRowEnabled
     }
 
     private fun currentKeyboardOrientation(): KeyboardOrientation =
