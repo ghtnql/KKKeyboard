@@ -26,7 +26,8 @@ object KeyboardBaseRows {
 
 object KeyboardRowSizing {
     private const val ROOT_VERTICAL_PADDING_DP = 14
-    private const val BUTTON_VERTICAL_MARGIN_DP = 4
+    // keyLayoutParams applies a 1dp margin above and below each button.
+    private const val BUTTON_VERTICAL_MARGIN_DP = 2
     private const val MIN_USABLE_KEY_HEIGHT_DP = 44
 
     fun plan(
