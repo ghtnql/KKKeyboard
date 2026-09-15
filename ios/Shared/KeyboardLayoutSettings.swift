@@ -25,8 +25,7 @@ struct KeyboardLayoutSettings {
     }
 
     func profile(for orientation: KeyboardOrientation) -> KeyboardLayoutProfile {
-        let storedHeight = defaults.integer(forKey: heightKey(for: orientation))
-        let requestedHeight = Self.supportedHeights.contains(storedHeight) ? storedHeight : Self.defaultHeight
+        let requestedHeight = requestedHeight(for: orientation)
 
         let numberKey = numberRowKey(for: orientation)
         let numberRowEnabled = defaults.object(forKey: numberKey) == nil
@@ -87,6 +86,15 @@ struct KeyboardLayoutSettings {
         return nextIndex == Self.supportedHeights.endIndex
             ? Self.supportedHeights[0]
             : Self.supportedHeights[nextIndex]
+    }
+
+    func nextHeight(for orientation: KeyboardOrientation) -> Int {
+        nextHeight(after: requestedHeight(for: orientation))
+    }
+
+    private func requestedHeight(for orientation: KeyboardOrientation) -> Int {
+        let storedHeight = defaults.integer(forKey: heightKey(for: orientation))
+        return Self.supportedHeights.contains(storedHeight) ? storedHeight : Self.defaultHeight
     }
 
     private func heightKey(for orientation: KeyboardOrientation) -> String {

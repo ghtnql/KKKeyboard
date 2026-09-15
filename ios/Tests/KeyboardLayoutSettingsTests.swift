@@ -75,6 +75,18 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
         XCTAssertEqual(settings.nextHeight(after: 999), 260)
     }
 
+    func testHeightCycleUsesStoredRequestWhenRenderedHeightIsExpanded() {
+        let defaults = isolatedDefaults()
+        let settings = KeyboardLayoutSettings(defaults: defaults)
+
+        settings.setHeight(260, for: .portrait)
+        settings.setNumberRowEnabled(true, for: .portrait)
+        settings.setCursorRowEnabled(true, for: .portrait)
+
+        XCTAssertEqual(settings.profile(for: .portrait).height, 314)
+        XCTAssertEqual(settings.nextHeight(for: .portrait), 300)
+    }
+
     private func isolatedDefaults() -> UserDefaults {
         let suite = "KeyboardLayoutSettingsTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

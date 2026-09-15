@@ -293,8 +293,7 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func handleHeightCycle() {
         let target = settingsTargetOrientation
-        let profile = layoutSettings.profile(for: target)
-        let nextHeight = layoutSettings.nextHeight(after: profile.height)
+        let nextHeight = layoutSettings.nextHeight(for: target)
         layoutSettings.setHeight(nextHeight, for: target)
         if target == layoutOrientation {
             applyLayoutProfile(for: layoutOrientation)
