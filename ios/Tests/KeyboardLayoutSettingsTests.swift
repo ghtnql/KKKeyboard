@@ -28,11 +28,38 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
 
         XCTAssertEqual(
             settings.profile(for: .portrait),
-            KeyboardLayoutProfile(height: 300, numberRowEnabled: true, cursorRowEnabled: true)
+            KeyboardLayoutProfile(height: 314, numberRowEnabled: true, cursorRowEnabled: true)
         )
         XCTAssertEqual(
             settings.profile(for: .landscape),
-            KeyboardLayoutProfile(height: 220, numberRowEnabled: false, cursorRowEnabled: false)
+            KeyboardLayoutProfile(height: 238, numberRowEnabled: false, cursorRowEnabled: false)
+        )
+    }
+
+    func testRenderedHeightPreservesMinimumUsableRows() {
+        XCTAssertEqual(
+            KeyboardLayoutSettings.renderedHeight(
+                requestedHeight: 220,
+                numberRowEnabled: false,
+                cursorRowEnabled: false
+            ),
+            238
+        )
+        XCTAssertEqual(
+            KeyboardLayoutSettings.renderedHeight(
+                requestedHeight: 220,
+                numberRowEnabled: true,
+                cursorRowEnabled: true
+            ),
+            314
+        )
+        XCTAssertEqual(
+            KeyboardLayoutSettings.renderedHeight(
+                requestedHeight: 300,
+                numberRowEnabled: false,
+                cursorRowEnabled: false
+            ),
+            300
         )
     }
 
