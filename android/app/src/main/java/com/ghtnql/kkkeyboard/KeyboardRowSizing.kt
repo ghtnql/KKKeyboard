@@ -14,6 +14,16 @@ data class KeyboardRowPlan(
     val cursorRowEnabled: Boolean,
 )
 
+object KeyboardBaseRows {
+    fun forMode(mode: InputFieldMode): Int = when (mode) {
+        InputFieldMode.TEXT -> 5
+        InputFieldMode.PASSWORD -> 4
+        InputFieldMode.EMAIL, InputFieldMode.URI -> 6
+        InputFieldMode.NUMBER -> 5
+        InputFieldMode.PHONE -> 6
+    }
+}
+
 object KeyboardRowSizing {
     private const val ROOT_VERTICAL_PADDING_DP = 14
     private const val BUTTON_VERTICAL_MARGIN_DP = 4

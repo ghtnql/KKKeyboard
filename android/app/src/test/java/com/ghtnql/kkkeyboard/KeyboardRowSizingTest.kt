@@ -7,6 +7,16 @@ import org.junit.Test
 
 class KeyboardRowSizingTest {
     @Test
+    fun `base row counts match the rows actually rendered for each field mode`() {
+        assertEquals(5, KeyboardBaseRows.forMode(InputFieldMode.TEXT))
+        assertEquals(4, KeyboardBaseRows.forMode(InputFieldMode.PASSWORD))
+        assertEquals(6, KeyboardBaseRows.forMode(InputFieldMode.EMAIL))
+        assertEquals(6, KeyboardBaseRows.forMode(InputFieldMode.URI))
+        assertEquals(5, KeyboardBaseRows.forMode(InputFieldMode.NUMBER))
+        assertEquals(6, KeyboardBaseRows.forMode(InputFieldMode.PHONE))
+    }
+
+    @Test
     fun `keeps requested height and optional rows when they fit`() {
         val plan = KeyboardRowSizing.plan(
             requestedKeyHeightDp = 50,
