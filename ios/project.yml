@@ -1,0 +1,60 @@
+name: KKKeyboard
+options:
+  bundleIdPrefix: com.ghtnql.kkkeyboard
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    DEVELOPMENT_TEAM: ""
+targets:
+  KKKeyboardApp:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    info:
+      path: App/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - target: KKKeyboardExtension
+        embed: true
+  KKKeyboardExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - KeyboardExtension
+      - Shared
+    info:
+      path: KeyboardExtension/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard.keyboard
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+  KKKeyboardTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ghtnql.kkkeyboard.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  KKKeyboard:
+    build:
+      targets:
+        KKKeyboardApp: all
+        KKKeyboardExtension: all
+        KKKeyboardTests: [test]
+    test:
+      gatherCoverageData: false
+      targets:
+        - KKKeyboardTests

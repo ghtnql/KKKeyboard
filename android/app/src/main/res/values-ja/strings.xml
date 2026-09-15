@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ㅋㅋキーボード</string>
+    <string name="onboarding_title">ㅋㅋキーボード</string>
+    <string name="onboarding_instructions">1. キーボードを有効にします。\n2. 入力欄でㅋㅋキーボードを選択します。\n3. 縦向き・横向きごとにキーの高さ、数字行、カーソル行を設定できます。</string>
+    <string name="orientation_portrait">縦向き</string>
+    <string name="orientation_landscape">横向き</string>
+    <string name="layout_section_format">%1$sレイアウト</string>
+    <string name="height_status_format">キーの高さ: %1$s (%2$ddp)</string>
+    <string name="height_compact">小さめ</string>
+    <string name="height_normal">標準</string>
+    <string name="height_tall">大きめ</string>
+    <string name="height_name_compact">コンパクト</string>
+    <string name="height_name_normal">標準</string>
+    <string name="height_name_tall">大きめ</string>
+    <string name="number_row_status_format">補助数字行: %1$s</string>
+    <string name="cursor_row_status_format">補助カーソル行: %1$s</string>
+    <string name="state_on">オン</string>
+    <string name="state_off">オフ</string>
+    <string name="number_row_enable">数字行をオン</string>
+    <string name="number_row_disable">数字行をオフ</string>
+    <string name="cursor_row_enable">カーソル行をオン</string>
+    <string name="cursor_row_disable">カーソル行をオフ</string>
+    <string name="open_keyboard_settings">キーボード設定を開く</string>
+    <string name="select_keyboard">キーボードを選択</string>
+</resources>

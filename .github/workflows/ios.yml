@@ -1,0 +1,116 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [main, bootstrap/android-mvp]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+      - 'shared/**'
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+      - 'shared/**'
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build app and keyboard extension
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project KKKeyboard.xcodeproj \
+            -scheme KKKeyboard \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Select unit-test destination
+        id: test-destination
+        working-directory: ios
+        run: |
+          set -euo pipefail
+
+          simulator_udid="$({
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime_devices in data.get("devices", {}).values():
+              for device in runtime_devices:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit
+          '
+          } || true)"
+
+          if [[ -n "$simulator_udid" ]]; then
+            destination="id=$simulator_udid"
+            echo "Using available iPhone simulator: $destination"
+          else
+            mac_destination_id="$({
+              xcodebuild \
+                -project KKKeyboard.xcodeproj \
+                -scheme KKKeyboard \
+                -showdestinations 2>/dev/null \
+                | sed -n 's/.*platform:macOS.*id:\([^,}]*\).*/\1/p' \
+                | head -n 1 \
+                | xargs
+            } || true)"
+
+            if [[ -z "$mac_destination_id" ]]; then
+              echo "No runnable iPhone simulator or Designed-for-iPhone/iPad Mac destination is available." >&2
+              xcodebuild -project KKKeyboard.xcodeproj -scheme KKKeyboard -showdestinations >&2
+              exit 1
+            fi
+
+            destination="id=$mac_destination_id"
+            echo "No iPhone simulator is installed; using Xcode-provided Mac destination: $destination"
+          fi
+
+          echo "destination=$destination" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit tests
+        working-directory: ios
+        run: |
+          set -o pipefail
+          rm -rf TestResults.xcresult
+          xcodebuild \
+            -project KKKeyboard.xcodeproj \
+            -scheme KKKeyboard \
+            -configuration Debug \
+            -destination '${{ steps.test-destination.outputs.destination }}' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            test 2>&1 | tee xcodebuild-test.log
+
+      - name: Upload unit-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-diagnostics
+          path: |
+            ios/xcodebuild-test.log
+            ios/TestResults.xcresult
+          if-no-files-found: warn
+          retention-days: 7
