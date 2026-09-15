@@ -31,4 +31,37 @@ class EnterActionResolverTest {
         val options = EditorInfo.IME_ACTION_SEND or EditorInfo.IME_FLAG_NO_ENTER_ACTION
         assertNull(EnterActionResolver.actionId(options))
     }
+
+    @Test
+    fun customActionIdTakesPrecedenceWhenLabelIsPresent() {
+        assertEquals(
+            42,
+            EnterActionResolver.actionId(
+                EditorInfo.IME_ACTION_UNSPECIFIED,
+                customActionLabel = "Lookup",
+                customActionId = 42,
+            ),
+        )
+    }
+
+    @Test
+    fun customActionRequiresLabel() {
+        assertNull(
+            EnterActionResolver.actionId(
+                EditorInfo.IME_ACTION_UNSPECIFIED,
+                customActionId = 42,
+            ),
+        )
+    }
+
+    @Test
+    fun noEnterActionFlagSuppressesCustomAction() {
+        assertNull(
+            EnterActionResolver.actionId(
+                EditorInfo.IME_FLAG_NO_ENTER_ACTION,
+                customActionLabel = "Lookup",
+                customActionId = 42,
+            ),
+        )
+    }
 }
