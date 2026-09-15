@@ -30,6 +30,7 @@ final class KeyboardViewController: UIInputViewController {
     private var numberRowButton: UIButton?
     private var cursorRowButton: UIButton?
     private var keyboardHeightConstraint: NSLayoutConstraint?
+    private var backspaceRepeatTimer: Timer?
 
     private var hangulLabels: [String] {
         TwoBeolsikLayout.characterRows.flatMap { $0 } + TwoBeolsikLayout.bottomRow
@@ -55,6 +56,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
+        stopBackspaceRepeat()
         commitPendingComposition()
         clearCandidateTracking()
         setShift(false)
@@ -203,7 +205,15 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(page)
         row.addArrangedSubview(makeButton(title: "space", action: #selector(handleSpace)))
         row.addArrangedSubview(makeButton(title: "return", action: #selector(handleReturn)))
-        row.addArrangedSubview(makeButton(title: "⌫", action: #selector(handleBackspace)))
+        let backspace = makeButton(title: "⌫", action: #selector(handleBackspace))
+        backspace.accessibilityLabel = "삭제"
+        let repeatGesture = UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(handleBackspaceLongPress(_:))
+        )
+        repeatGesture.minimumPressDuration = 0.4
+        backspace.addGestureRecognizer(repeatGesture)
+        row.addArrangedSubview(backspace)
         keyboardStack.addArrangedSubview(row)
     }
 
@@ -353,6 +363,26 @@ final class KeyboardViewController: UIInputViewController {
             candidateInput.removeCommittedCharacter()
         }
         refreshCandidates()
+    }
+
+    @objc private func handleBackspaceLongPress(_ recognizer: UILongPressGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            handleBackspace()
+            stopBackspaceRepeat()
+            backspaceRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) {
+                [weak self] _ in self?.handleBackspace()
+            }
+        case .ended, .cancelled, .failed:
+            stopBackspaceRepeat()
+        default:
+            break
+        }
+    }
+
+    private func stopBackspaceRepeat() {
+        backspaceRepeatTimer?.invalidate()
+        backspaceRepeatTimer = nil
     }
 
     @objc private func handleNextKeyboard() {
