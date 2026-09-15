@@ -26,7 +26,7 @@ struct KeyboardLayoutSettings {
 
     func profile(for orientation: KeyboardOrientation) -> KeyboardLayoutProfile {
         let storedHeight = defaults.integer(forKey: heightKey(for: orientation))
-        let height = Self.supportedHeights.contains(storedHeight) ? storedHeight : Self.defaultHeight
+        let requestedHeight = Self.supportedHeights.contains(storedHeight) ? storedHeight : Self.defaultHeight
 
         let numberKey = numberRowKey(for: orientation)
         let numberRowEnabled = defaults.object(forKey: numberKey) == nil
@@ -38,6 +38,11 @@ struct KeyboardLayoutSettings {
             ? false
             : defaults.bool(forKey: cursorKey)
 
+        let height = Self.renderedHeight(
+            requestedHeight: requestedHeight,
+            numberRowEnabled: numberRowEnabled,
+            cursorRowEnabled: cursorRowEnabled
+        )
         return KeyboardLayoutProfile(
             height: height,
             numberRowEnabled: numberRowEnabled,
@@ -45,17 +50,20 @@ struct KeyboardLayoutSettings {
         )
     }
 
-    static func renderedHeight(for profile: KeyboardLayoutProfile, settingsVisible: Bool) -> Int {
+    static func renderedHeight(
+        requestedHeight: Int,
+        numberRowEnabled: Bool,
+        cursorRowEnabled: Bool
+    ) -> Int {
         // Candidate + three character rows + bottom character row + control row.
         let baseRows = 6
         let rowCount = baseRows
-            + (profile.numberRowEnabled ? 1 : 0)
-            + (profile.cursorRowEnabled ? 1 : 0)
-            + (settingsVisible ? 1 : 0)
+            + (numberRowEnabled ? 1 : 0)
+            + (cursorRowEnabled ? 1 : 0)
         let minimumHeight = verticalInsets
             + max(0, rowCount - 1) * rowSpacing
             + rowCount * minimumUsableRowHeight
-        return max(profile.height, minimumHeight)
+        return max(requestedHeight, minimumHeight)
     }
 
     func setHeight(_ height: Int, for orientation: KeyboardOrientation) {
