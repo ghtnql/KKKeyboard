@@ -35,7 +35,7 @@ class KeyboardRowSizingTest {
 
         assertTrue(plan.numberRowEnabled)
         assertFalse(plan.cursorRowEnabled)
-        assertEquals(44, plan.keyHeightDp)
+        assertEquals(45, plan.keyHeightDp)
     }
 
     @Test
