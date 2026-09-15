@@ -14,6 +14,9 @@ struct KeyboardLayoutProfile: Equatable {
 struct KeyboardLayoutSettings {
     static let supportedHeights = [220, 260, 300]
     static let defaultHeight = 260
+    static let minimumUsableRowHeight = 32
+    static let verticalInsets = 16
+    static let rowSpacing = 6
 
     private let defaults: UserDefaults
 
@@ -40,6 +43,19 @@ struct KeyboardLayoutSettings {
             numberRowEnabled: numberRowEnabled,
             cursorRowEnabled: cursorRowEnabled
         )
+    }
+
+    static func renderedHeight(for profile: KeyboardLayoutProfile, settingsVisible: Bool) -> Int {
+        // Candidate + three character rows + bottom character row + control row.
+        let baseRows = 6
+        let rowCount = baseRows
+            + (profile.numberRowEnabled ? 1 : 0)
+            + (profile.cursorRowEnabled ? 1 : 0)
+            + (settingsVisible ? 1 : 0)
+        let minimumHeight = verticalInsets
+            + max(0, rowCount - 1) * rowSpacing
+            + rowCount * minimumUsableRowHeight
+        return max(profile.height, minimumHeight)
     }
 
     func setHeight(_ height: Int, for orientation: KeyboardOrientation) {
