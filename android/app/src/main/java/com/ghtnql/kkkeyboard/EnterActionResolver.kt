@@ -8,8 +8,12 @@ import android.view.inputmethod.EditorInfo
  * and easy to regression-test.
  */
 object EnterActionResolver {
-    fun actionId(imeOptions: Int): Int? {
+    fun actionId(imeOptions: Int, customActionLabel: CharSequence? = null, customActionId: Int = 0): Int? {
         if ((imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0) return null
+
+        // Editors may advertise a custom action without setting a standard IME action.
+        // Prefer that explicit callback so Enter never falls through to a raw newline.
+        if (!customActionLabel.isNullOrEmpty() && customActionId != 0) return customActionId
 
         return when (val action = imeOptions and EditorInfo.IME_MASK_ACTION) {
             EditorInfo.IME_ACTION_GO,
