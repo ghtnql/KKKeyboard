@@ -4,6 +4,7 @@ import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -17,91 +18,53 @@ import android.widget.LinearLayout
 class KoreanKeyboardService : InputMethodService() {
     private val composer = HangulComposer()
     private val candidateInput = CandidateInputBuffer()
-    private val shiftedCharacterButtons = mutableListOf<Pair<Button, String>>()
-    private val candidateButtons = mutableListOf<Button>()
     private val handler = Handler(Looper.getMainLooper())
-    private var shiftEnabled = false
-    private var shiftButton: Button? = null
-    private var modeButton: Button? = null
     private var deleting = false
-    private var keyboardRoot: LinearLayout? = null
-    private var candidateRow: LinearLayout? = null
-    private var activeFieldMode = InputFieldMode.TEXT
+    private val deleteRepeat = object : Runnable { override fun run() { if (!deleting) return; currentInputConnection?.let(::handleBackspace); handler.postDelayed(this, 55L) } }
     private var japaneseCandidateMode = false
-    private var displayedCandidates: List<String> = emptyList()
-    private var layoutOrientation = KeyboardOrientation.PORTRAIT
-    private var keyHeightDp = KeyboardHeight.NORMAL.keyHeightDp
+    private var shiftEnabled = false
+    private var activeFieldMode = InputFieldMode.TEXT
+    private var keyHeightDp = 50
     private var numberRowEnabled = false
     private var cursorRowEnabled = false
+    private val shiftedCharacterButtons = mutableListOf<Pair<Button,String>>()
+    private val candidateButtons = mutableListOf<Button>()
+    private var shiftButton: Button? = null
+    private var modeButton: Button? = null
+    private var candidateRow: LinearLayout? = null
+    private var displayedCandidates: List<String> = emptyList()
+    private var rootView: LinearLayout? = null
 
-    private val deleteRepeat = object : Runnable {
-        override fun run() {
-            if (!deleting) return
-            currentInputConnection?.let(::handleBackspace)
-            handler.postDelayed(this, 55L)
-        }
-    }
-
-    override fun onCreateInputView(): View {
-        activeFieldMode = InputFieldModeResolver.fromInputType(currentInputEditorInfo?.inputType ?: 0)
-        layoutOrientation = currentKeyboardOrientation()
-        applyLayoutPlan(layoutPlan(activeFieldMode, layoutOrientation))
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(4), dp(6), dp(4), dp(8))
-            keyboardRoot = this
-            renderKeyboard(this, activeFieldMode)
-        }
+    override fun onCreateInputView(): View = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL; setPadding(dp(2), dp(2), dp(2), dp(2)); rootView = this
+        renderKeyboard(this, activeFieldMode)
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
-        stopDeleteRepeat()
         resetInputState()
+        activeFieldMode = InputFieldModeResolver.resolve(attribute?.inputType ?: InputType.TYPE_CLASS_TEXT)
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        stopDeleteRepeat()
-
-        val nextMode = InputFieldModeResolver.fromInputType(info?.inputType ?: 0)
-        val modeChanged = nextMode != activeFieldMode
-        val nextOrientation = currentKeyboardOrientation()
-        val orientationChanged = nextOrientation != layoutOrientation
-        val nextPlan = layoutPlan(nextMode, nextOrientation)
-        val heightChanged = nextPlan.keyHeightDp != keyHeightDp
-        val numberRowChanged = nextPlan.numberRowEnabled != numberRowEnabled
-        val cursorRowChanged = nextPlan.cursorRowEnabled != cursorRowEnabled
-        activeFieldMode = nextMode
-        layoutOrientation = nextOrientation
-        applyLayoutPlan(nextPlan)
-
-        if (!restarting) resetInputState()
-
-        keyboardRoot?.let { root ->
-            if (!restarting || modeChanged || orientationChanged || heightChanged || numberRowChanged || cursorRowChanged) {
-                renderKeyboard(root, nextMode)
-            }
-        }
+        activeFieldMode = InputFieldModeResolver.resolve(info?.inputType ?: InputType.TYPE_CLASS_TEXT)
+        rootView?.let { renderKeyboard(it, activeFieldMode) }
     }
 
-    override fun onUpdateSelection(oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int) {
-        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
-        if (composer.currentText().isEmpty()) return
-        if (newSelStart == candidatesEnd && newSelEnd == candidatesEnd) return
-        composer.reset()
-        clearCandidateTracking()
-        currentInputConnection?.finishComposingText()
+    override fun onFinishInput() { super.onFinishInput(); resetInputState(); stopDeleteRepeat() }
+
+    override fun onUpdateSelection(oldSelStart:Int,oldSelEnd:Int,newSelStart:Int,newSelEnd:Int,candidatesStart:Int,candidatesEnd:Int){
+        super.onUpdateSelection(oldSelStart,oldSelEnd,newSelStart,newSelEnd,candidatesStart,candidatesEnd)
+        if(oldSelStart==newSelStart&&oldSelEnd==newSelEnd)return
+        if(composer.currentText().isEmpty()&&!candidateInput.hasCommittedToken()&&displayedCandidates.isEmpty())return
+        currentInputConnection?.finishComposingText();composer.reset();clearCandidateTracking()
     }
 
-    override fun onFinishInputView(finishingInput: Boolean) { stopDeleteRepeat(); super.onFinishInputView(finishingInput) }
-    override fun onWindowHidden() { stopDeleteRepeat(); super.onWindowHidden() }
-    override fun onFinishInput() { stopDeleteRepeat(); resetInputState(); super.onFinishInput() }
-    override fun onDestroy() { stopDeleteRepeat(); keyboardRoot = null; candidateRow = null; candidateButtons.clear(); modeButton = null; super.onDestroy() }
-
-    private fun resetInputState() { composer.reset(); candidateInput.clear(); setShift(false); displayedCandidates = emptyList(); hideCandidateButtons() }
+    private fun resetInputState(){composer.reset();candidateInput.clear();displayedCandidates=emptyList();if(shiftEnabled)setShift(false)else shiftEnabled=false;hideCandidateButtons()}
 
     private fun renderKeyboard(root: LinearLayout, mode: InputFieldMode) {
+        val orientation=currentKeyboardOrientation();applyLayoutPlan(layoutPlan(mode,orientation))
         shiftedCharacterButtons.clear(); candidateButtons.clear(); shiftButton = null; modeButton = null; candidateRow = null; shiftEnabled = false; displayedCandidates = emptyList(); root.removeAllViews()
         when (mode) {
             InputFieldMode.NUMBER -> renderNumberKeyboard(root)
@@ -184,7 +147,7 @@ class KoreanKeyboardService : InputMethodService() {
     private fun applyEdit(connection:InputConnection,edit:HangulComposer.Edit){if(edit.commit.isNotEmpty())connection.commitText(edit.commit,1);if(edit.composing!=null)connection.setComposingText(edit.composing,1)}
     private fun commitPending(connection:InputConnection){val pending=composer.flush();if(pending.isNotEmpty())connection.commitText(pending,1)else connection.finishComposingText()}
 
-    private fun layoutPlan(mode:InputFieldMode,orientation:KeyboardOrientation):KeyboardRowPlan{val requestedHeightDp=KeyboardLayoutSettings.readHeight(this,orientation).keyHeightDp;val requestedNumberRow=KeyboardLayoutSettings.readNumberRowEnabled(this,orientation);val requestedCursorRow=KeyboardLayoutSettings.readCursorRowEnabled(this,orientation);val configuredHeightDp=resources.configuration.screenHeightDp;val availableHeightDp=if(configuredHeightDp>0)configuredHeightDp else (resources.displayMetrics.heightPixels/resources.displayMetrics.density).toInt().coerceAtLeast(1);val baseRowCount=when(mode){InputFieldMode.TEXT,InputFieldMode.PASSWORD->6;InputFieldMode.EMAIL,InputFieldMode.URI->7;InputFieldMode.NUMBER->5;InputFieldMode.PHONE->6};val supportsNumberRow=mode!=InputFieldMode.NUMBER&&mode!=InputFieldMode.PHONE;return KeyboardRowSizing.plan(requestedHeightDp,availableHeightDp,baseRowCount,requestedNumberRow,requestedCursorRow,supportsNumberRow)}
+    private fun layoutPlan(mode:InputFieldMode,orientation:KeyboardOrientation):KeyboardRowPlan{val requestedHeightDp=KeyboardLayoutSettings.readHeight(this,orientation).keyHeightDp;val requestedNumberRow=KeyboardLayoutSettings.readNumberRowEnabled(this,orientation);val requestedCursorRow=KeyboardLayoutSettings.readCursorRowEnabled(this,orientation);val configuredHeightDp=resources.configuration.screenHeightDp;val availableHeightDp=if(configuredHeightDp>0)configuredHeightDp else (resources.displayMetrics.heightPixels/resources.displayMetrics.density).toInt().coerceAtLeast(1);val baseRowCount=when(mode){InputFieldMode.TEXT->5;InputFieldMode.PASSWORD->4;InputFieldMode.EMAIL,InputFieldMode.URI->6;InputFieldMode.NUMBER->5;InputFieldMode.PHONE->6};val supportsNumberRow=mode!=InputFieldMode.NUMBER&&mode!=InputFieldMode.PHONE;return KeyboardRowSizing.plan(requestedHeightDp,availableHeightDp,baseRowCount,requestedNumberRow,requestedCursorRow,supportsNumberRow)}
     private fun applyLayoutPlan(plan:KeyboardRowPlan){keyHeightDp=plan.keyHeightDp;numberRowEnabled=plan.numberRowEnabled;cursorRowEnabled=plan.cursorRowEnabled}
     private fun currentKeyboardOrientation()=if(resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE)KeyboardOrientation.LANDSCAPE else KeyboardOrientation.PORTRAIT
     private fun keyLayoutParams(weight:Float=1f)=LinearLayout.LayoutParams(0,dp(keyHeightDp),weight).apply{setMargins(dp(1),dp(1),dp(1),dp(1))}
