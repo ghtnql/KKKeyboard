@@ -52,13 +52,15 @@ struct KeyboardLayoutSettings {
     static func renderedHeight(
         requestedHeight: Int,
         numberRowEnabled: Bool,
-        cursorRowEnabled: Bool
+        cursorRowEnabled: Bool,
+        settingsRowVisible: Bool = false
     ) -> Int {
-        // Candidate + three character rows + bottom character row + control row.
-        let baseRows = 6
+        // Candidate + two upper character rows + bottom character row + control row.
+        let baseRows = 5
         let rowCount = baseRows
             + (numberRowEnabled ? 1 : 0)
             + (cursorRowEnabled ? 1 : 0)
+            + (settingsRowVisible ? 1 : 0)
         let minimumHeight = verticalInsets
             + max(0, rowCount - 1) * rowSpacing
             + rowCount * minimumUsableRowHeight

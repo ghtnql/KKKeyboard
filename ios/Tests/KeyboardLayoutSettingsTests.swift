@@ -28,11 +28,11 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
 
         XCTAssertEqual(
             settings.profile(for: .portrait),
-            KeyboardLayoutProfile(height: 314, numberRowEnabled: true, cursorRowEnabled: true)
+            KeyboardLayoutProfile(height: 300, numberRowEnabled: true, cursorRowEnabled: true)
         )
         XCTAssertEqual(
             settings.profile(for: .landscape),
-            KeyboardLayoutProfile(height: 238, numberRowEnabled: false, cursorRowEnabled: false)
+            KeyboardLayoutProfile(height: 220, numberRowEnabled: false, cursorRowEnabled: false)
         )
     }
 
@@ -43,7 +43,7 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
                 numberRowEnabled: false,
                 cursorRowEnabled: false
             ),
-            238
+            220
         )
         XCTAssertEqual(
             KeyboardLayoutSettings.renderedHeight(
@@ -51,7 +51,7 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
                 numberRowEnabled: true,
                 cursorRowEnabled: true
             ),
-            314
+            276
         )
         XCTAssertEqual(
             KeyboardLayoutSettings.renderedHeight(
@@ -83,8 +83,20 @@ final class KeyboardLayoutSettingsTests: XCTestCase {
         settings.setNumberRowEnabled(true, for: .portrait)
         settings.setCursorRowEnabled(true, for: .portrait)
 
-        XCTAssertEqual(settings.profile(for: .portrait).height, 314)
+        XCTAssertEqual(settings.profile(for: .portrait).height, 276)
         XCTAssertEqual(settings.nextHeight(for: .portrait), 300)
+    }
+
+    func testSettingsRowOnlyExpandsHeightWhileItIsVisible() {
+        XCTAssertEqual(
+            KeyboardLayoutSettings.renderedHeight(
+                requestedHeight: 220,
+                numberRowEnabled: false,
+                cursorRowEnabled: false,
+                settingsRowVisible: true
+            ),
+            238
+        )
     }
 
     private func isolatedDefaults() -> UserDefaults {

@@ -292,8 +292,8 @@ final class KeyboardViewController: UIInputViewController {
         settingsRow.isHidden = !settingsVisible
         if settingsVisible {
             settingsTargetOrientation = layoutOrientation
-            refreshSettingsControls()
         }
+        applyLayoutProfile(for: layoutOrientation)
     }
 
     @objc private func handleSettingsOrientationToggle() {
@@ -413,7 +413,13 @@ final class KeyboardViewController: UIInputViewController {
     private func applyLayoutProfile(for orientation: KeyboardOrientation) {
         layoutOrientation = orientation
         let profile = layoutSettings.profile(for: orientation)
-        keyboardHeightConstraint?.constant = CGFloat(profile.height)
+        let renderedHeight = KeyboardLayoutSettings.renderedHeight(
+            requestedHeight: profile.height,
+            numberRowEnabled: profile.numberRowEnabled,
+            cursorRowEnabled: profile.cursorRowEnabled,
+            settingsRowVisible: settingsVisible
+        )
+        keyboardHeightConstraint?.constant = CGFloat(renderedHeight)
         numberRow.isHidden = !profile.numberRowEnabled
         cursorRow.isHidden = !profile.cursorRowEnabled
 
